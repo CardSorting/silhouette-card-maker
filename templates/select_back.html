@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Back Image - Silhouette Card Maker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .back-option {
+            border: 3px solid #e1e5e9;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+        }
+        .back-option:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+        .back-option.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e7f3ff 0%, #f0f8ff 100%);
+        }
+        .back-option input[type="radio"] {
+            display: none;
+        }
+        .option-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .option-filename {
+            font-size: 16px;
+            color: #333;
+            word-break: break-all;
+            margin-bottom: 10px;
+        }
+        .option-description {
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+        }
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .back-btn {
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" style="text-decoration: none;">
+            <button type="button" class="back-btn">← Back to Main</button>
+        </a>
+        
+        <h1>🖼️ Select Back Image</h1>
+        
+        <div class="info-box">
+            <strong>Multiple back images detected!</strong><br>
+            Please select which image you want to use as the back for all your cards.
+        </div>
+
+        <form method="POST" action="/select_back">
+            <!-- Hidden fields to preserve form data -->
+            {% for key, value in form_data.items() %}
+                {% if key != 'selected_back_index' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+            {% endfor %}
+            
+            <div class="selection-grid">
+                {% for i in range(back_images|length) %}
+                <div class="back-option" onclick="selectBack({{ i }})">
+                    <input type="radio" id="back_{{ i }}" name="selected_back_index" value="{{ i }}" {% if i == 0 %}checked{% endif %}>
+                    <div class="option-number">#{{ i + 1 }}</div>
+                    <div class="option-filename">{{ back_images[i] }}</div>
+                    <div class="option-description">
+                        {% if i == 0 %}
+                            Default selection
+                        {% else %}
+                            Click to select
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" id="continueBtn">Continue with Selected Back Image</button>
+        </form>
+    </div>
+
+    <script>
+        function selectBack(index) {
+            // Clear all selections
+            document.querySelectorAll('.back-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select the clicked option
+            const selectedOption = document.querySelectorAll('.back-option')[index];
+            selectedOption.classList.add('selected');
+            
+            // Check the radio button
+            document.getElementById(`back_${index}`).checked = true;
+            
+            // Update descriptions
+            document.querySelectorAll('.option-description').forEach((desc, i) => {
+                if (i === index) {
+                    desc.textContent = 'Selected ✓';
+                    desc.style.color = '#28a745';
+                    desc.style.fontWeight = 'bold';
+                } else {
+                    desc.textContent = 'Click to select';
+                    desc.style.color = '#666';
+                    desc.style.fontWeight = 'normal';
+                }
+            });
+        }
+        
+        // Initialize first option as selected
+        selectBack(0);
+    </script>
+</body>
+</html>

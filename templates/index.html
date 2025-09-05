@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silhouette Card Maker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        input[type="file"] {
+            padding: 5px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .advanced-options {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .advanced-options h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            background-color: #fafafa;
+        }
+        .file-upload:hover {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        .section h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎴 Silhouette Card Maker</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            Create custom card PDFs with registration marks for silhouette cutting machines
+        </p>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-error">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/generate" enctype="multipart/form-data">
+            <div class="section">
+                <h3>📁 Card Images</h3>
+                
+                <div class="form-group">
+                    <label for="front_files">Front Images *</label>
+                    <div class="file-upload">
+                        <input type="file" id="front_files" name="front_files" multiple accept="image/*" required>
+                        <div class="help-text">Select all front card images (PNG, JPG, etc.)</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="back_files">Back Images (Optional)</label>
+                    <div class="file-upload">
+                        <input type="file" id="back_files" name="back_files" multiple accept="image/*">
+                        <div class="help-text">Select one back image to use for all cards (optional)</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="double_sided_files">Double-Sided Back Images (Optional)</label>
+                    <div class="file-upload">
+                        <input type="file" id="double_sided_files" name="double_sided_files" multiple accept="image/*">
+                        <div class="help-text">Select back images for double-sided cards (filenames must match front images)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>⚙️ Basic Settings</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="card_size">Card Size</label>
+                        <select id="card_size" name="card_size">
+                            {% for size in card_sizes %}
+                                <option value="{{ size }}" {% if size == 'standard' %}selected{% endif %}>
+                                    {{ size.replace('_', ' ').title() }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paper_size">Paper Size</label>
+                        <select id="paper_size" name="paper_size">
+                            {% for size in paper_sizes %}
+                                <option value="{{ size }}" {% if size == 'letter' %}selected{% endif %}>
+                                    {{ size.replace('_', ' ').title() }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="only_fronts" name="only_fronts">
+                        <label for="only_fronts">Only generate front pages (exclude backs)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🔧 Advanced Options</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="crop">Crop</label>
+                        <input type="text" id="crop" name="crop" placeholder="e.g. 3mm, 0.125in, 6.5">
+                        <div class="help-text">Crop outer portion of images (e.g., "3mm", "0.125in", "6.5")</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="extend_corners">Extend Corners</label>
+                        <input type="number" id="extend_corners" name="extend_corners" min="0" value="0">
+                        <div class="help-text">Reduce artifacts from rounded corners (try 10)</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ppi">PPI (Pixels Per Inch)</label>
+                        <input type="number" id="ppi" name="ppi" min="72" max="600" value="300">
+                        <div class="help-text">Higher values = better quality but larger files</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quality">Quality</label>
+                        <input type="number" id="quality" name="quality" min="1" max="100" value="75">
+                        <div class="help-text">Compression quality (1-100, higher = better quality)</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="skip_indices">Skip Card Indices</label>
+                        <input type="text" id="skip_indices" name="skip_indices" placeholder="e.g. 0,4,8">
+                        <div class="help-text">Skip cards at these positions (comma-separated, e.g., "0,4,8")</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="name">Sheet Name</label>
+                        <input type="text" id="name" name="name" placeholder="e.g. My Card Set">
+                        <div class="help-text">Label each page with this name (optional)</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit">🎯 Generate PDF</button>
+        </form>
+
+        <div style="margin-top: 30px; padding: 20px; background-color: #e9ecef; border-radius: 5px;">
+            <h4>📋 Card Size Reference</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #666;">
+                <li><strong>Standard (63x88mm):</strong> Magic: The Gathering, Pokémon, Lorcana, One Piece</li>
+                <li><strong>Japanese (59x86mm):</strong> Yu-Gi-Oh!</li>
+                <li><strong>Poker (2.5x3.5in):</strong> Traditional playing cards</li>
+                <li><strong>Bridge (2.25x3.5in):</strong> Bridge playing cards</li>
+                <li><strong>Tarot (2.75x4.75in):</strong> Tarot cards</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Show file count when files are selected
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', function() {
+                const count = this.files.length;
+                const helpText = this.parentNode.querySelector('.help-text');
+                if (count > 0) {
+                    const originalText = helpText.textContent;
+                    helpText.textContent = `${originalText} (${count} file${count === 1 ? '' : 's'} selected)`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

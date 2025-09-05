@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silhouette Card Maker - Enhanced</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        .version-info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            border-radius: 10px;
+        }
+        .tab.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        input[type="file"] {
+            padding: 8px;
+            border: 2px dashed #e1e5e9;
+            background-color: #fafbfc;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+            transition: all 0.3s;
+            position: relative;
+        }
+        .file-upload:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f8ff 0%, #e7f3ff 100%);
+            transform: translateY(-2px);
+        }
+        .file-upload.drag-over {
+            border-color: #667eea;
+            background-color: #f0f8ff;
+            transform: scale(1.02);
+        }
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .utility-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .utility-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            padding: 12px 20px;
+            font-size: 14px;
+            margin: 0;
+        }
+        .danger-btn {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .section {
+            margin-bottom: 35px;
+            padding: 25px;
+            background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+        .section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .card-reference {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        .plugin-options {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        .plugin-options.active {
+            display: block;
+        }
+        .offset-display {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        @media (max-width: 768px) {
+            .form-row, .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+            .tabs {
+                flex-direction: column;
+            }
+            .utility-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎴 Silhouette Card Maker</h1>
+            <p class="subtitle">Complete web interface with 1:1 CLI feature parity</p>
+            
+            {% if saved_offset %}
+            <div class="offset-display">
+                <strong>📍 Saved Offset:</strong> X: {{ saved_offset.x_offset }}, Y: {{ saved_offset.y_offset }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="version-info">
+            <strong>🚀 Enhanced Flask Version</strong> - All CLI features + Web interface<br>
+            <small>Supports plugins, offset correction, image output, and advanced options</small>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if 'Error' in message or 'error' in message %}alert-error{% else %}alert-success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Utility Buttons -->
+        <div class="utility-buttons">
+            <a href="/offset" class="utility-btn" style="text-decoration: none; display: block; text-align: center;">
+                📐 PDF Offset Tool
+            </a>
+            <a href="/calibration" class="utility-btn" style="text-decoration: none; display: block; text-align: center;">
+                🎯 Generate Calibration
+            </a>
+            <form method="POST" action="/cleanup" style="display: inline;">
+                <button type="submit" class="utility-btn danger-btn">🗑️ Clean Game Dirs</button>
+            </form>
+            <a href="/api/version" class="utility-btn" style="text-decoration: none; display: block; text-align: center;">
+                ℹ️ Version Info
+            </a>
+        </div>
+
+        <!-- Main Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('manual')">📁 Manual Upload</button>
+            <button class="tab" onclick="showTab('plugin')">🔌 Plugin Mode</button>
+        </div>
+
+        <!-- Manual Upload Tab -->
+        <div id="manual" class="tab-content active">
+            <form method="POST" action="/generate" enctype="multipart/form-data">
+                <div class="section">
+                    <h3>📁 Card Images</h3>
+                    
+                    <div class="form-group">
+                        <label for="front_files">Front Images *</label>
+                        <div class="file-upload">
+                            <input type="file" id="front_files" name="front_files" multiple accept="image/*" required>
+                            <div class="help-text">Select all front card images (PNG, JPG, etc.) - Required</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="back_files">Back Images (Optional)</label>
+                        <div class="file-upload">
+                            <input type="file" id="back_files" name="back_files" multiple accept="image/*">
+                            <div class="help-text">Select back image(s) - if multiple, you'll choose which one to use</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="double_sided_files">Double-Sided Back Images (Optional)</label>
+                        <div class="file-upload">
+                            <input type="file" id="double_sided_files" name="double_sided_files" multiple accept="image/*">
+                            <div class="help-text">Select back images for double-sided cards (filenames must match front images)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>⚙️ Basic Settings</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="card_size">Card Size</label>
+                            <select id="card_size" name="card_size">
+                                {% for size in card_sizes %}
+                                    <option value="{{ size }}" {% if size == 'standard' %}selected{% endif %}>
+                                        {{ size.replace('_', ' ').title() }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="paper_size">Paper Size</label>
+                            <select id="paper_size" name="paper_size">
+                                {% for size in paper_sizes %}
+                                    <option value="{{ size }}" {% if size == 'letter' %}selected{% endif %}>
+                                        {{ size.replace('_', ' ').title() }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="only_fronts" name="only_fronts">
+                            <label for="only_fronts">Only generate front pages (exclude backs)</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="output_images" name="output_images">
+                            <label for="output_images">Output images instead of PDF (ZIP file)</label>
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="load_offset" name="load_offset" {% if saved_offset %}checked{% endif %}>
+                        <label for="load_offset">Apply saved offset correction</label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>🔧 Advanced Options</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="crop">Crop</label>
+                            <input type="text" id="crop" name="crop" placeholder="e.g. 3mm, 0.125in, 6.5">
+                            <div class="help-text">Crop outer portion of images to remove existing bleed</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="extend_corners">Extend Corners</label>
+                            <input type="number" id="extend_corners" name="extend_corners" min="0" value="0">
+                            <div class="help-text">Reduce artifacts from rounded corners (try 10)</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="ppi">PPI (Pixels Per Inch)</label>
+                            <input type="number" id="ppi" name="ppi" min="72" max="600" value="300">
+                            <div class="help-text">Higher = better quality, larger files</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="quality">Quality</label>
+                            <input type="number" id="quality" name="quality" min="1" max="100" value="75">
+                            <div class="help-text">Compression (1-100, higher = better)</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="skip_indices">Skip Cards</label>
+                            <input type="text" id="skip_indices" name="skip_indices" placeholder="0,4,8">
+                            <div class="help-text">Skip cards at these positions</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="name">Sheet Name</label>
+                        <input type="text" id="name" name="name" placeholder="e.g. My Card Set">
+                        <div class="help-text">Label each page with this name (optional)</div>
+                    </div>
+                </div>
+
+                <button type="submit">🎯 Generate Cards</button>
+            </form>
+        </div>
+
+        <!-- Plugin Mode Tab -->
+        <div id="plugin" class="tab-content">
+            <form method="POST" action="/generate" enctype="multipart/form-data">
+                <input type="hidden" name="use_plugin" value="on">
+                
+                <div class="section">
+                    <h3>🔌 Plugin Settings</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="plugin_game">Game</label>
+                            <select id="plugin_game" name="plugin_game" onchange="updatePluginFormats()" required>
+                                <option value="">Select a game...</option>
+                                {% for game, formats in plugin_games.items() %}
+                                    <option value="{{ game }}">{{ game.upper().replace('_', ' ') }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="plugin_format">Decklist Format</label>
+                            <select id="plugin_format" name="plugin_format" required>
+                                <option value="">Select format...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="decklist_files">Decklist File *</label>
+                        <div class="file-upload">
+                            <input type="file" id="decklist_files" name="decklist_files" accept=".txt,.json" required>
+                            <div class="help-text">Upload your decklist file (TXT or JSON format)</div>
+                        </div>
+                    </div>
+
+                    <!-- MTG Plugin Options -->
+                    <div id="mtg_options" class="plugin-options">
+                        <h4>MTG Plugin Options</h4>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="ignore_set_and_collector_number" name="ignore_set_and_collector_number">
+                            <label for="ignore_set_and_collector_number">Ignore set and collector numbers</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="prefer_older_sets" name="prefer_older_sets">
+                            <label for="prefer_older_sets">Prefer older sets</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="prefer_showcase" name="prefer_showcase">
+                            <label for="prefer_showcase">Prefer showcase treatment</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="prefer_extra_art" name="prefer_extra_art">
+                            <label for="prefer_extra_art">Prefer full/borderless/extended art</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="prefer_set">Preferred Sets (comma-separated)</label>
+                            <input type="text" id="prefer_set" name="prefer_set" placeholder="e.g. ELD,WOE">
+                            <div class="help-text">Prefer cards from these sets when available</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Same basic settings as manual mode -->
+                <div class="section">
+                    <h3>⚙️ Card Generation Settings</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="plugin_card_size">Card Size</label>
+                            <select id="plugin_card_size" name="card_size">
+                                {% for size in card_sizes %}
+                                    <option value="{{ size }}" {% if size == 'standard' %}selected{% endif %}>
+                                        {{ size.replace('_', ' ').title() }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="plugin_paper_size">Paper Size</label>
+                            <select id="plugin_paper_size" name="paper_size">
+                                {% for size in paper_sizes %}
+                                    <option value="{{ size }}" {% if size == 'letter' %}selected{% endif %}>
+                                        {{ size.replace('_', ' ').title() }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="plugin_only_fronts" name="only_fronts">
+                            <label for="plugin_only_fronts">Only generate front pages</label>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="plugin_output_images" name="output_images">
+                            <label for="plugin_output_images">Output images instead of PDF</label>
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="plugin_load_offset" name="load_offset" {% if saved_offset %}checked{% endif %}>
+                        <label for="plugin_load_offset">Apply saved offset correction</label>
+                    </div>
+                </div>
+
+                <button type="submit">🔌 Fetch Cards & Generate</button>
+            </form>
+        </div>
+
+        <div class="card-reference">
+            <h4>📋 Card Size Reference</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #666; columns: 2;">
+                <li><strong>Standard (63x88mm):</strong> Magic, Pokémon, Lorcana, One Piece</li>
+                <li><strong>Japanese (59x86mm):</strong> Yu-Gi-Oh!</li>
+                <li><strong>Poker (2.5x3.5in):</strong> Traditional playing cards</li>
+                <li><strong>Bridge (2.25x3.5in):</strong> Bridge cards</li>
+                <li><strong>Tarot (2.75x4.75in):</strong> Tarot cards</li>
+                <li><strong>Domino (1.75x3.5in):</strong> Domino cards</li>
+            </ul>
+            
+            <h4 style="margin-top: 20px;">🔌 Plugin Format Reference</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #666; columns: 2; font-size: 14px;">
+                <li><strong>MTG:</strong> simple, mtga, mtgo, archidekt, deckstats, moxfield, scryfall_json</li>
+                <li><strong>Yu-Gi-Oh!:</strong> ydke, ydk</li>
+                <li><strong>One Piece:</strong> optcgsim, egman</li>
+                <li><strong>Lorcana:</strong> dreamborn</li>
+                <li><strong>Riftbound:</strong> tts, pixelborn, piltover_archive</li>
+                <li><strong>Gundam:</strong> deckplanet, limitless, egman, exburst</li>
+                <li><strong>Digimon:</strong> tts, digimoncardio, digimoncarddev, digimoncardapp, digimonmeta, untap</li>
+                <li><strong>Grand Archive:</strong> omnideck</li>
+                <li><strong>Netrunner:</strong> text, bbcode, markdown, plain_text, jinteki</li>
+                <li><strong>Altered:</strong> ajordat</li>
+                <li><strong>Flesh and Blood:</strong> fabrary</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const pluginFormats = {{ plugin_games | tojson }};
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+        
+        function updatePluginFormats() {
+            const gameSelect = document.getElementById('plugin_game');
+            const formatSelect = document.getElementById('plugin_format');
+            const selectedGame = gameSelect.value;
+            
+            // Clear existing options
+            formatSelect.innerHTML = '<option value="">Select format...</option>';
+            
+            // Hide all plugin options
+            document.querySelectorAll('.plugin-options').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            if (selectedGame && pluginFormats[selectedGame]) {
+                // Add formats for selected game
+                pluginFormats[selectedGame].forEach(format => {
+                    const option = document.createElement('option');
+                    option.value = format;
+                    option.textContent = format.toUpperCase().replace('_', ' ');
+                    formatSelect.appendChild(option);
+                });
+                
+                // Show plugin-specific options
+                const optionsDiv = document.getElementById(selectedGame + '_options');
+                if (optionsDiv) {
+                    optionsDiv.classList.add('active');
+                }
+            }
+        }
+        
+        // File upload feedback
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', function() {
+                const count = this.files.length;
+                const helpText = this.parentNode.querySelector('.help-text');
+                if (count > 0) {
+                    const originalText = helpText.dataset.original || helpText.textContent;
+                    helpText.dataset.original = originalText;
+                    helpText.innerHTML = `${originalText} <strong>(${count} file${count === 1 ? '' : 's'} selected)</strong>`;
+                }
+            });
+        });
+
+        // Drag and drop functionality
+        document.querySelectorAll('.file-upload').forEach(uploadArea => {
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                this.classList.remove('drag-over');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                
+                const input = this.querySelector('input[type="file"]');
+                input.files = e.dataTransfer.files;
+                
+                // Trigger change event
+                const event = new Event('change', { bubbles: true });
+                input.dispatchEvent(event);
+            });
+        });
+    </script>
+</body>
+</html>

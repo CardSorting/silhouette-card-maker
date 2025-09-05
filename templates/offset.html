@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Offset Tool - Silhouette Card Maker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        input[type="file"] {
+            padding: 8px;
+            border: 2px dashed #e1e5e9;
+            background-color: #fafbfc;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .back-btn {
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            margin-bottom: 20px;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left-color: #dc3545;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .info-box {
+            background-color: #e3f2fd;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .saved-offset {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #fafbfc 0%, #f8f9fa 100%);
+            transition: all 0.3s;
+        }
+        .file-upload:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f8ff 0%, #e7f3ff 100%);
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" style="text-decoration: none;">
+            <button type="button" class="back-btn">← Back to Main</button>
+        </a>
+        
+        <h1>📐 PDF Offset Tool</h1>
+        
+        <div class="info-box">
+            <h3>🎯 How to Use Offset Correction</h3>
+            <p><strong>Step 1:</strong> Generate calibration PDFs and print them on your card stock.</p>
+            <p><strong>Step 2:</strong> Shine a light through the front to see shadows on the back.</p>
+            <p><strong>Step 3:</strong> Find where the front and back squares align perfectly.</p>
+            <p><strong>Step 4:</strong> Use those coordinates as your X and Y offset values.</p>
+            <p><strong>Step 5:</strong> Save the offset to automatically apply it to future cards.</p>
+        </div>
+
+        {% if saved_offset %}
+        <div class="saved-offset">
+            <strong>💾 Currently Saved Offset:</strong> X: {{ saved_offset.x_offset }}, Y: {{ saved_offset.y_offset }}
+        </div>
+        {% endif %}
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if 'Error' in message or 'error' in message %}alert-error{% else %}alert-success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/offset" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="pdf_file">PDF File to Offset *</label>
+                <div class="file-upload">
+                    <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required>
+                    <div class="help-text">Select the PDF you want to apply offset correction to</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="x_offset">X Offset (pixels)</label>
+                    <input type="number" id="x_offset" name="x_offset" value="{% if saved_offset %}{{ saved_offset.x_offset }}{% else %}0{% endif %}" step="1">
+                    <div class="help-text">Horizontal offset (negative = left, positive = right)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="y_offset">Y Offset (pixels)</label>
+                    <input type="number" id="y_offset" name="y_offset" value="{% if saved_offset %}{{ saved_offset.y_offset }}{% else %}0{% endif %}" step="1">
+                    <div class="help-text">Vertical offset (negative = up, positive = down)</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="ppi">PPI (Pixels Per Inch)</label>
+                    <input type="number" id="ppi" name="ppi" min="72" max="600" value="300">
+                    <div class="help-text">Should match your original PDF settings</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="save_offsets" name="save_offsets" checked>
+                        <label for="save_offsets">Save these offset values for future use</label>
+                    </div>
+                    <div class="help-text">Will be automatically applied in main generator</div>
+                </div>
+            </div>
+
+            <button type="submit">📐 Apply Offset & Download</button>
+        </form>
+
+        <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+            <h4>💡 Offset Tips</h4>
+            <ul style="margin: 0; color: #666;">
+                <li><strong>Positive X:</strong> Shifts every other page to the right</li>
+                <li><strong>Negative X:</strong> Shifts every other page to the left</li>
+                <li><strong>Positive Y:</strong> Shifts every other page down</li>
+                <li><strong>Negative Y:</strong> Shifts every other page up</li>
+                <li><strong>Typical values:</strong> -10 to +10 pixels work for most printers</li>
+                <li><strong>Fine-tuning:</strong> Start with larger values, then adjust by 1-2 pixels</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // File upload feedback
+        document.getElementById('pdf_file').addEventListener('change', function() {
+            const fileName = this.files[0]?.name;
+            const helpText = this.parentNode.querySelector('.help-text');
+            if (fileName) {
+                helpText.innerHTML = `Selected: <strong>${fileName}</strong>`;
+            }
+        });
+    </script>
+</body>
+</html>
