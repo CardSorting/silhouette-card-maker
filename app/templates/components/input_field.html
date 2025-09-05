@@ -1,0 +1,15 @@
+<!-- Input Field Component -->
+<div class="form-group">
+    <label for="{{ field_id }}">{{ label }}{% if required %} *{% endif %}</label>
+    <input type="{{ input_type }}" 
+           id="{{ field_id }}" 
+           name="{{ field_name }}"
+           {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+           {% if value %}value="{{ value }}"{% endif %}
+           {% if min %}min="{{ min }}"{% endif %}
+           {% if max %}max="{{ max }}"{% endif %}
+           {% if required %}required{% endif %}>
+    {% if help_text %}
+    <div class="help-text">{{ help_text }}</div>
+    {% endif %}
+</div>

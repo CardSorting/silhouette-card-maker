@@ -31,10 +31,22 @@ def create_images_zip(images_dir):
 
 @bp.route('/')
 def index():
-    """Main page with card generation interface"""
+    """Main page with unified card generation interface"""
     # Load saved offset for display
     saved_offset = load_saved_offset()
-    return render_template('index.html', 
+    return render_template('index_clean.html', 
+                         card_sizes=[size.value for size in CardSize],
+                         paper_sizes=[size.value for size in PaperSize],
+                         plugin_games=current_app.config['PLUGIN_GAMES'],
+                         saved_offset=saved_offset)
+
+
+@bp.route('/grid')
+def grid_upload():
+    """Grid-based upload interface"""
+    # Load saved offset for display
+    saved_offset = load_saved_offset()
+    return render_template('grid_upload.html', 
                          card_sizes=[size.value for size in CardSize],
                          paper_sizes=[size.value for size in PaperSize],
                          plugin_games=current_app.config['PLUGIN_GAMES'],
@@ -43,21 +55,7 @@ def index():
 
 @bp.route('/select_back', methods=['POST'])
 def select_back():
-    """Handle multiple back image selection"""
-    selected_index = int(request.form.get('selected_back_index'))
-    
-    # Re-process the original form data with selected back image
-    form_data = dict(request.form)
-    form_data['selected_back_index'] = selected_index
-    
-    # Recreate the request and call generate
-    return generate_with_selected_back(form_data)
-
-
-def generate_with_selected_back(form_data):
-    """Generate PDF with a specific back image selected"""
-    # This would need to store the temp files somehow
-    # For simplicity, redirect back to main form
+    """Handle multiple back image selection - redirect to main page"""
     flash("Please re-upload your files and select the back image.")
     return redirect(url_for('main.index'))
 
@@ -146,9 +144,8 @@ def generate():
                 back_result = handle_multiple_back_images(back_dir, selected_back_index)
                 if isinstance(back_result, list):
                     # Multiple back images found, need user selection
-                    return render_template('select_back.html', 
-                                         back_images=back_result,
-                                         form_data=request.form.to_dict())
+                    flash(f"Multiple back images found: {', '.join(back_result)}. Please re-upload and select one back image.")
+                    return redirect(url_for('main.index'))
         
         # Generate output path
         if output_images:

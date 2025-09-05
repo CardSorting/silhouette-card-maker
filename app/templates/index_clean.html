@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Silhouette Card Maker - Enhanced{% endblock %}
+
+{% block subtitle %}Complete web interface with 1:1 CLI feature parity{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pass plugin data to JavaScript
+    window.pluginFormats = {{ plugin_games | tojson }};
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Main Tabs -->
+<div class="tabs">
+    <button class="tab active" onclick="showTab('manual')">📁 Manual Upload</button>
+    <button class="tab" onclick="showTab('plugin')">🔌 Plugin Mode</button>
+</div>
+
+<!-- Manual Upload Tab Content -->
+<div id="manual" class="tab-content active">
+    <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data">
+        {% include 'sections/card_images.html' %}
+        {% include 'sections/basic_settings.html' %}
+        {% include 'sections/advanced_options.html' %}
+        
+        <button type="submit">🎯 Generate Cards</button>
+    </form>
+</div>
+
+<!-- Plugin Mode Tab Content -->
+<div id="plugin" class="tab-content">
+    <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data">
+        <input type="hidden" name="use_plugin" value="on">
+        
+        {% include 'sections/plugin_settings.html' %}
+        {% include 'sections/basic_settings.html' %}
+        
+        <button type="submit">🔌 Fetch Cards & Generate</button>
+    </form>
+</div>
+
+<!-- Plugin Format Reference -->
+<div class="card-reference">
+    <h4>🔌 Plugin Format Reference</h4>
+    <ul>
+        <li><strong>MTG:</strong> simple, mtga, mtgo, archidekt, deckstats, moxfield, scryfall_json</li>
+        <li><strong>Yu-Gi-Oh!:</strong> ydke, ydk</li>
+        <li><strong>One Piece:</strong> optcgsim, egman</li>
+        <li><strong>Lorcana:</strong> dreamborn</li>
+        <li><strong>Riftbound:</strong> tts, pixelborn, piltover_archive</li>
+        <li><strong>Gundam:</strong> deckplanet, limitless, egman, exburst</li>
+        <li><strong>Digimon:</strong> tts, digimoncardio, digimoncarddev, digimoncardapp, digimonmeta, untap</li>
+        <li><strong>Grand Archive:</strong> omnideck</li>
+        <li><strong>Netrunner:</strong> text, bbcode, markdown, plain_text, jinteki</li>
+        <li><strong>Altered:</strong> ajordat</li>
+        <li><strong>Flesh and Blood:</strong> fabrary</li>
+    </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+<!-- Checkbox Field Component -->
+<div class="checkbox-group">
+    <input type="checkbox" 
+           id="{{ field_id }}" 
+           name="{{ field_name }}"
+           {% if checked %}checked{% endif %}>
+    <label for="{{ field_id }}">{{ label }}</label>
+</div>

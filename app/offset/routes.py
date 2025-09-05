@@ -12,6 +12,7 @@ from utilities import load_saved_offset, save_offset, offset_images
 def offset_pdf():
     """Handle PDF offset functionality"""
     if request.method == 'GET':
+        # Show dedicated offset page
         saved_offset = load_saved_offset()
         return render_template('offset.html', saved_offset=saved_offset)
     

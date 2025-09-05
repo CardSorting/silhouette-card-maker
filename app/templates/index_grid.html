@@ -1,0 +1,647 @@
+{% extends "base.html" %}
+
+{% block title %}Silhouette Card Maker - Grid Upload{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in space-y-8">
+    <!-- Hero Section -->
+    <div class="text-center">
+        <h1 class="text-3xl font-bold text-neutral-900 mb-4">Silhouette Card Maker</h1>
+        <p class="text-neutral-600 text-lg mb-6 max-w-3xl mx-auto">
+            Create print-ready card PDFs with registration marks for your Silhouette cutting machine
+        </p>
+        
+        <!-- Interface Links -->
+        <div class="mb-4 flex gap-3 justify-center">
+            <a href="{{ url_for('main.index') }}" class="inline-flex items-center gap-2 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                </svg>
+                Bulk Upload
+            </a>
+            <span class="inline-flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg font-medium">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                </svg>
+                Grid Upload
+            </span>
+        </div>
+        
+        <!-- Status indicator -->
+        {% if saved_offset %}
+        <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm border border-emerald-200">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+            Alignment correction ready (X: {{ saved_offset.x_offset }}, Y: {{ saved_offset.y_offset }})
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Interface -->
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-neutral-100">
+                <div class="flex">
+                    <button type="button" class="tab-btn active flex-1 py-4 px-6 text-sm font-medium text-center" data-tab="grid-upload">
+                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        Grid Upload
+                    </button>
+                    <button type="button" class="tab-btn flex-1 py-4 px-6 text-sm font-medium text-center" data-tab="plugin">
+                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"></path>
+                        </svg>
+                        Import Decklist
+                    </button>
+                    <button type="button" class="tab-btn flex-1 py-4 px-6 text-sm font-medium text-center" data-tab="offset">
+                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        Offset PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+                <!-- Grid Upload Tab -->
+                <div id="grid-upload-tab" class="tab-content">
+                    <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data" id="grid-upload-form">
+                        <!-- Upload Controls -->
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-neutral-900">Card Images</h3>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="addImageSlots(5)" class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">
+                                        + Add 5 Slots
+                                    </button>
+                                    <button type="button" onclick="selectAllImages()" class="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600">
+                                        Select All
+                                    </button>
+                                    <button type="button" onclick="clearAllImages()" class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600">
+                                        Clear All
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Bulk Upload Zone -->
+                            <div class="upload-zone rounded-xl border-2 border-dashed border-neutral-200 p-8 text-center cursor-pointer group mb-4" id="bulk-upload-zone">
+                                <input type="file" id="bulk-upload" multiple accept="image/*" class="sr-only">
+                                <label for="bulk-upload" class="cursor-pointer">
+                                    <div class="w-12 h-12 mx-auto mb-4 text-neutral-400 group-hover:text-primary-500 transition-colors">
+                                        <svg fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <p class="text-base font-medium text-neutral-900 mb-1">Bulk Upload Images</p>
+                                    <p class="text-sm text-neutral-600">Drop multiple images here to auto-fill grid slots</p>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Image Grid -->
+                        <div id="image-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6" data-sortable="true">
+                            <!-- Grid slots will be dynamically added here -->
+                        </div>
+
+                        <!-- Back Image Options -->
+                        <div id="back-options" class="hidden mb-6">
+                            <details class="group border border-neutral-200 rounded-lg">
+                                <summary class="flex items-center gap-2 cursor-pointer p-4 hover:bg-neutral-50">
+                                    <svg class="w-4 h-4 transition-transform group-open:rotate-90 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="font-medium text-neutral-900">Add card backs</span>
+                                    <span class="text-sm text-neutral-500">(optional)</span>
+                                </summary>
+                                
+                                <div class="p-4 pt-0 space-y-4">
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <div class="upload-zone rounded-lg border border-neutral-200 p-4 text-center cursor-pointer">
+                                            <input type="file" id="back_files" name="back_files" accept="image/*" class="sr-only">
+                                            <label for="back_files" class="cursor-pointer block">
+                                                <div class="w-8 h-8 mx-auto mb-2 text-neutral-400">
+                                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <p class="text-sm font-medium text-neutral-700">Same back for all</p>
+                                                <p class="text-xs text-neutral-500">One image</p>
+                                            </label>
+                                            <div id="back-info" class="mt-2 text-xs"></div>
+                                        </div>
+                                        
+                                        <div class="upload-zone rounded-lg border border-neutral-200 p-4 text-center cursor-pointer">
+                                            <input type="file" id="double_sided_files" name="double_sided_files" multiple accept="image/*" class="sr-only">
+                                            <label for="double_sided_files" class="cursor-pointer block">
+                                                <div class="w-8 h-8 mx-auto mb-2 text-neutral-400">
+                                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <p class="text-sm font-medium text-neutral-700">Different backs</p>
+                                                <p class="text-xs text-neutral-500">Match filenames</p>
+                                            </label>
+                                            <div id="double-info" class="mt-2 text-xs"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+
+                        <!-- Settings Section -->
+                        <div class="border-t border-neutral-100 pt-6">
+                            <h3 class="text-lg font-semibold text-neutral-900 mb-4">Settings</h3>
+                            
+                            <!-- Essential Settings -->
+                            <div class="space-y-4">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label for="card_size" class="block text-sm font-medium text-neutral-700 mb-2">Card Size</label>
+                                        <select id="card_size" name="card_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white text-sm">
+                                            {% for size in card_sizes %}
+                                                <option value="{{ size }}" {% if size == 'standard' %}selected{% endif %}>
+                                                    {{ size.replace('_', ' ').title() }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="paper_size" class="block text-sm font-medium text-neutral-700 mb-2">Paper Size</label>
+                                        <select id="paper_size" name="paper_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white text-sm">
+                                            {% for size in paper_sizes %}
+                                                <option value="{{ size }}" {% if size == 'letter' %}selected{% endif %}>
+                                                    {{ size.replace('_', ' ').title() }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Options -->
+                                <div class="flex flex-wrap gap-4">
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="only_fronts" name="only_fronts" class="focus-ring">
+                                        <span class="text-neutral-700">Front only</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="output_images" name="output_images" class="focus-ring">
+                                        <span class="text-neutral-700">Images (ZIP)</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="load_offset" name="load_offset" {% if saved_offset %}checked{% endif %} class="focus-ring">
+                                        <span class="text-neutral-700">Apply offset</span>
+                                    </label>
+                                </div>
+
+                                <!-- Advanced Options -->
+                                <details class="group">
+                                    <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-600 hover:text-neutral-800">
+                                        <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                        More options
+                                    </summary>
+                                    
+                                    <div class="mt-4 space-y-3">
+                                        <div class="grid gap-3 md:grid-cols-3">
+                                            <div>
+                                                <label for="name" class="block text-sm font-medium text-neutral-700 mb-1">Name</label>
+                                                <input type="text" id="name" name="name" placeholder="My Cards" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="ppi" class="block text-sm font-medium text-neutral-700 mb-1">Quality</label>
+                                                <select id="ppi" name="ppi" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white text-sm">
+                                                    <option value="150">Fast (150 PPI)</option>
+                                                    <option value="300" selected>Standard (300 PPI)</option>
+                                                    <option value="600">High (600 PPI)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="skip_indices" class="block text-sm font-medium text-neutral-700 mb-1">Skip cards</label>
+                                                <input type="text" id="skip_indices" name="skip_indices" placeholder="0,4,8" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
+                                            </div>
+                                        </div>
+                                        <div class="grid gap-3 md:grid-cols-2">
+                                            <div>
+                                                <label for="crop" class="block text-sm font-medium text-neutral-700 mb-1">Crop edges</label>
+                                                <input type="text" id="crop" name="crop" placeholder="3mm" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="extend_corners" class="block text-sm font-medium text-neutral-700 mb-1">Corner fix</label>
+                                                <input type="number" id="extend_corners" name="extend_corners" min="0" value="0" placeholder="10" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="border-t border-neutral-100 pt-6">
+                            <button type="submit" class="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-all" id="upload-btn" disabled>
+                                <span class="flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    Generate Cards
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Plugin Tab (same as original) -->
+                <div id="plugin-tab" class="tab-content hidden">
+                    <!-- Plugin content from original template -->
+                </div>
+
+                <!-- Offset Tab (same as original) -->
+                <div id="offset-tab" class="tab-content hidden">
+                    <!-- Offset content from original template -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+    // @ts-nocheck
+    const pluginFormats = {{ plugin_games | tojson | safe }};
+    let currentTab = 'grid-upload';
+    let imageSlots = [];
+    let nextSlotId = 0;
+    
+    // Initialize the interface
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeTabSwitching();
+        initializeGridUpload();
+        initializeFormValidation();
+        initializeDragAndDrop();
+        updateButtons();
+        
+        // Auto-populate offset values if saved offsets exist
+        {% if saved_offset %}
+        document.getElementById('x_offset').value = {{ saved_offset.x_offset }};
+        document.getElementById('y_offset').value = {{ saved_offset.y_offset }};
+        {% endif %}
+        
+        // Handle URL hash for direct tab access
+        const hash = window.location.hash.substring(1);
+        if (hash && ['grid-upload', 'plugin', 'offset'].includes(hash)) {
+            switchTab(hash);
+        }
+        
+        // Start with 10 empty slots
+        addImageSlots(10);
+    });
+    
+    // Tab switching
+    function initializeTabSwitching() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tab = this.dataset.tab;
+                switchTab(tab);
+            });
+        });
+    }
+    
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // Update button states
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.tab === tab) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Show/hide content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        document.getElementById(tab + '-tab').classList.remove('hidden');
+        
+        updateButtons();
+    }
+    
+    // Grid upload functionality
+    function initializeGridUpload() {
+        // Bulk upload handler
+        const bulkUpload = document.getElementById('bulk-upload');
+        if (bulkUpload) {
+            bulkUpload.addEventListener('change', function() {
+                handleBulkUpload(this.files);
+            });
+        }
+    }
+    
+    function addImageSlots(count) {
+        const grid = document.getElementById('image-grid');
+        for (let i = 0; i < count; i++) {
+            const slot = createImageSlot();
+            grid.appendChild(slot);
+            imageSlots.push(slot);
+        }
+    }
+    
+    function createImageSlot() {
+        const slotId = nextSlotId++;
+        const slot = document.createElement('div');
+        slot.className = 'image-slot relative bg-neutral-50 border-2 border-dashed border-neutral-200 rounded-lg p-4 min-h-[120px] flex flex-col items-center justify-center cursor-pointer hover:border-primary-300 transition-colors';
+        slot.dataset.slotId = slotId;
+        slot.draggable = true;
+        
+        slot.innerHTML = `
+            <input type="file" id="image-${slotId}" name="front_files" accept="image/*" class="sr-only">
+            <div class="slot-content text-center">
+                <div class="w-8 h-8 mx-auto mb-2 text-neutral-400">
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <p class="text-xs text-neutral-500">Click to add image</p>
+            </div>
+            <div class="slot-actions absolute top-1 right-1 opacity-0 transition-opacity">
+                <button type="button" onclick="removeImageSlot(${slotId})" class="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600">
+                    ×
+                </button>
+            </div>
+        `;
+        
+        // Add click handler
+        slot.addEventListener('click', function() {
+            const input = slot.querySelector('input[type="file"]');
+            input.click();
+        });
+        
+        // Add file change handler
+        const input = slot.querySelector('input[type="file"]');
+        input.addEventListener('change', function() {
+            handleImageUpload(this, slot);
+        });
+        
+        // Show/hide actions on hover
+        slot.addEventListener('mouseenter', function() {
+            this.querySelector('.slot-actions').classList.remove('opacity-0');
+        });
+        
+        slot.addEventListener('mouseleave', function() {
+            this.querySelector('.slot-actions').classList.add('opacity-0');
+        });
+        
+        // Drag and drop for reordering
+        slot.addEventListener('dragstart', function(e) {
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.outerHTML);
+        });
+        
+        slot.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+        });
+        
+        slot.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+        
+        slot.addEventListener('drop', function(e) {
+            e.preventDefault();
+            const draggedElement = document.querySelector('.dragging');
+            if (draggedElement && draggedElement !== this) {
+                const grid = document.getElementById('image-grid');
+                const rect = this.getBoundingClientRect();
+                const midpoint = rect.top + rect.height / 2;
+                
+                if (e.clientY < midpoint) {
+                    grid.insertBefore(draggedElement, this);
+                } else {
+                    grid.insertBefore(draggedElement, this.nextSibling);
+                }
+                
+                // Update imageSlots array to reflect new order
+                updateImageSlotsOrder();
+            }
+        });
+        
+        return slot;
+    }
+    
+    function handleImageUpload(input, slot) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = slot.querySelector('.slot-content');
+            content.innerHTML = `
+                <img src="${e.target.result}" alt="${file.name}" class="w-full h-20 object-cover rounded mb-2">
+                <p class="text-xs text-neutral-600 truncate" title="${file.name}">${file.name}</p>
+                <p class="text-xs text-neutral-400">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            `;
+            
+            slot.classList.remove('border-dashed', 'border-neutral-200');
+            slot.classList.add('border-solid', 'border-emerald-300', 'bg-emerald-50');
+            
+            // Show back options if we have at least one image
+            const backOptions = document.getElementById('back-options');
+            if (backOptions && getImageCount() > 0) {
+                backOptions.classList.remove('hidden');
+            }
+        };
+        reader.readAsDataURL(file);
+        
+        updateButtons();
+    }
+    
+    function handleBulkUpload(files) {
+        let fileIndex = 0;
+        
+        // Find empty slots
+        const emptySlots = imageSlots.filter(slot => {
+            const input = slot.querySelector('input[type="file"]');
+            return !input.files[0];
+        });
+        
+        // Fill empty slots with files
+        for (let i = 0; i < Math.min(files.length, emptySlots.length); i++) {
+            const slot = emptySlots[i];
+            const input = slot.querySelector('input[type="file"]');
+            
+            // Create a new FileList with the single file
+            const dt = new DataTransfer();
+            dt.items.add(files[fileIndex]);
+            input.files = dt.files;
+            
+            handleImageUpload(input, slot);
+            fileIndex++;
+        }
+        
+        // If we have more files than empty slots, add more slots
+        if (fileIndex < files.length) {
+            const remainingFiles = files.length - fileIndex;
+            addImageSlots(remainingFiles);
+            
+            // Fill the new slots
+            for (let i = 0; i < remainingFiles; i++) {
+                const slot = imageSlots[imageSlots.length - remainingFiles + i];
+                const input = slot.querySelector('input[type="file"]');
+                
+                const dt = new DataTransfer();
+                dt.items.add(files[fileIndex]);
+                input.files = dt.files;
+                
+                handleImageUpload(input, slot);
+                fileIndex++;
+            }
+        }
+    }
+    
+    function removeImageSlot(slotId) {
+        const slot = imageSlots.find(s => s.dataset.slotId == slotId);
+        if (slot) {
+            slot.remove();
+            imageSlots = imageSlots.filter(s => s.dataset.slotId != slotId);
+            
+            // Hide back options if no images left
+            const backOptions = document.getElementById('back-options');
+            if (backOptions && getImageCount() === 0) {
+                backOptions.classList.add('hidden');
+            }
+            
+            updateButtons();
+        }
+    }
+    
+    function selectAllImages() {
+        // This would select all images for batch operations
+        console.log('Select all images');
+    }
+    
+    function clearAllImages() {
+        imageSlots.forEach(slot => {
+            const input = slot.querySelector('input[type="file"]');
+            input.value = '';
+            
+            const content = slot.querySelector('.slot-content');
+            content.innerHTML = `
+                <div class="w-8 h-8 mx-auto mb-2 text-neutral-400">
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <p class="text-xs text-neutral-500">Click to add image</p>
+            `;
+            
+            slot.classList.remove('border-solid', 'border-emerald-300', 'bg-emerald-50');
+            slot.classList.add('border-dashed', 'border-neutral-200');
+        });
+        
+        const backOptions = document.getElementById('back-options');
+        if (backOptions) {
+            backOptions.classList.add('hidden');
+        }
+        
+        updateButtons();
+    }
+    
+    function getImageCount() {
+        return imageSlots.filter(slot => {
+            const input = slot.querySelector('input[type="file"]');
+            return input.files[0];
+        }).length;
+    }
+    
+    function updateImageSlotsOrder() {
+        const grid = document.getElementById('image-grid');
+        imageSlots = Array.from(grid.querySelectorAll('.image-slot'));
+    }
+    
+    // Form validation
+    function initializeFormValidation() {
+        // All form inputs
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('change', updateButtons);
+            input.addEventListener('input', updateButtons);
+        });
+    }
+    
+    function updateButtons() {
+        const uploadBtn = document.getElementById('upload-btn');
+        
+        // Update upload button
+        if (uploadBtn) {
+            const hasImages = getImageCount() > 0;
+            uploadBtn.disabled = !hasImages;
+        }
+    }
+    
+    // Drag and drop
+    function initializeDragAndDrop() {
+        document.querySelectorAll('.upload-zone').forEach(zone => {
+            const input = zone.querySelector('input[type="file"]');
+            if (!input) return;
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.add('dragover'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.remove('dragover'), false);
+            });
+            
+            zone.addEventListener('drop', e => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    input.files = files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        });
+    }
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+</script>
+
+<style>
+    .dragover {
+        border-color: #3b82f6 !important;
+        background-color: #eff6ff !important;
+    }
+    
+    .image-slot {
+        transition: all 0.2s ease;
+    }
+    
+    .image-slot:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .slot-actions {
+        transition: opacity 0.2s ease;
+    }
+    
+    .image-slot.dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+    }
+    
+    .image-slot.drag-over {
+        border-color: #3b82f6 !important;
+        background-color: #eff6ff !important;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Grid Upload - Silhouette Card Maker{% endblock %}
+
+{% block subtitle %}Upload multiple card images in a grid layout{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h3>📊 Grid Upload Interface</h3>
+    <p>Upload multiple card images and arrange them in a grid for easier organization.</p>
+    
+    <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data">
+        {% include 'sections/card_images.html' %}
+        {% include 'sections/basic_settings.html' %}
+        {% include 'sections/advanced_options.html' %}
+        
+        <button type="submit">🎯 Generate Cards from Grid</button>
+    </form>
+</div>
+
+<div class="card-reference">
+    <h4>📊 Grid Upload Tips</h4>
+    <ul>
+        <li><strong>Organize by type:</strong> Group similar cards together</li>
+        <li><strong>Consistent naming:</strong> Use descriptive filenames for easier identification</li>
+        <li><strong>Batch processing:</strong> Upload multiple sets at once for efficiency</li>
+        <li><strong>Preview before generating:</strong> Check your selections before creating the PDF</li>
+    </ul>
+</div>
+{% endblock %}

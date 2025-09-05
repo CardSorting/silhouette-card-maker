@@ -1,522 +1,626 @@
 {% extends "base.html" %}
 
-{% block title %}Card Generator - Silhouette Card Maker{% endblock %}
+{% block title %}Silhouette Card Maker{% endblock %}
 
 {% block content %}
 <div class="animate-fade-in space-y-8">
-    <!-- Simple Introduction -->
+    <!-- Hero Section -->
     <div class="text-center">
-        <h1 class="text-2xl font-semibold text-neutral-900 mb-2">Create Card PDFs</h1>
-        <p class="text-neutral-600 max-w-2xl mx-auto">
-            Generate professionally formatted card sheets for silhouette cutting machines
+        <h1 class="text-3xl font-bold text-neutral-900 mb-4">Silhouette Card Maker</h1>
+        <p class="text-neutral-600 text-lg mb-6 max-w-3xl mx-auto">
+            Create print-ready card PDFs with registration marks for your Silhouette cutting machine
         </p>
-    </div>
-
-    <!-- Quick Actions (if needed) -->
-    {% if saved_offset %}
-    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
-        <div class="w-5 h-5 text-amber-600 flex-shrink-0">
-            <svg fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-            </svg>
-        </div>
-        <div>
-            <p class="text-sm font-medium text-amber-800">Offset correction saved</p>
-            <p class="text-xs text-amber-700">X: {{ saved_offset.x_offset }}, Y: {{ saved_offset.y_offset }} - Will be applied automatically</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Method Selection -->
-    <div class="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        <div class="p-6 border-b border-neutral-100">
-            <h2 class="font-medium text-neutral-900 mb-1">How do you want to add your cards?</h2>
-            <p class="text-sm text-neutral-600">Choose the method that works best for your workflow</p>
+        
+        <!-- Grid Upload Link -->
+        <div class="mb-4">
+            <a href="{{ url_for('main.grid_upload') }}" class="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                </svg>
+                Try Grid Upload Interface
+            </a>
         </div>
         
-        <div class="p-6 space-y-3">
-            <label class="flex items-start gap-4 p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
-                <input type="radio" name="method" value="upload" class="mt-1 focus-ring" checked onchange="showMethod('upload')">
-                <div class="flex-1">
-                    <div class="font-medium text-neutral-900 mb-1">Upload Images</div>
-                    <div class="text-sm text-neutral-600">Upload card images from your device</div>
-                </div>
-            </label>
-            
-            <label class="flex items-start gap-4 p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 cursor-pointer has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50">
-                <input type="radio" name="method" value="plugin" class="mt-1 focus-ring" onchange="showMethod('plugin')">
-                <div class="flex-1">
-                    <div class="font-medium text-neutral-900 mb-1">Use Plugin</div>
-                    <div class="text-sm text-neutral-600">Import cards from decklist files (MTG, Yu-Gi-Oh!, etc.)</div>
-                </div>
-            </label>
+        <!-- Status indicator -->
+        {% if saved_offset %}
+        <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm border border-emerald-200">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+            Alignment correction ready (X: {{ saved_offset.x_offset }}, Y: {{ saved_offset.y_offset }})
         </div>
+        {% endif %}
     </div>
 
-    <!-- Upload Method -->
-    <div id="upload-method" class="space-y-6">
-        <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data" class="space-y-6">
-            
-            <!-- Step 1: Upload Files -->
-            <div class="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-                <div class="p-6 border-b border-neutral-100">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-6 h-6 bg-primary-500 text-white text-sm font-medium rounded-full flex items-center justify-center">1</div>
-                        <h3 class="font-medium text-neutral-900">Add Your Card Images</h3>
-                    </div>
-                    <p class="text-sm text-neutral-600">Upload the card images you want to print</p>
-                </div>
-                
-                <div class="p-6 space-y-6">
-                    <!-- Front Images -->
-                    <div>
-                        <label for="front_files" class="block text-sm font-medium text-neutral-900 mb-3">
-                            Front Images <span class="text-red-500">*</span>
-                        </label>
-                        <div class="upload-zone rounded-lg p-8 text-center bg-neutral-50 cursor-pointer">
-                            <input type="file" id="front_files" name="front_files" multiple accept="image/*" required class="sr-only" onchange="updateFileInfo(this, 'front-info')">
-                            <label for="front_files" class="cursor-pointer">
-                                <div class="w-12 h-12 mx-auto mb-4 text-neutral-400">
-                                    <svg fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <p class="text-base font-medium text-neutral-900 mb-1">Drop images here or click to browse</p>
-                                <p class="text-sm text-neutral-600">PNG, JPG, or other image formats</p>
-                            </label>
-                        </div>
-                        <div id="front-info" class="mt-2 text-sm text-neutral-600"></div>
-                    </div>
-
-                    <!-- Optional Back Images -->
-                    <details class="group">
-                        <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-700 hover:text-neutral-900">
-                            <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            Add back images (optional)
-                        </summary>
-                        
-                        <div class="mt-4 grid gap-4 md:grid-cols-2">
-                            <div>
-                                <label for="back_files" class="block text-sm font-medium text-neutral-700 mb-2">Same back for all cards</label>
-                                <div class="upload-zone rounded-lg p-4 text-center bg-neutral-50 cursor-pointer">
-                                    <input type="file" id="back_files" name="back_files" multiple accept="image/*" class="sr-only" onchange="updateFileInfo(this, 'back-info')">
-                                    <label for="back_files" class="cursor-pointer">
-                                        <div class="w-6 h-6 mx-auto mb-2 text-neutral-400">
-                                            <svg fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <p class="text-sm font-medium text-neutral-700">Upload back image</p>
-                                    </label>
-                                </div>
-                                <div id="back-info" class="mt-1 text-xs text-neutral-600"></div>
-                            </div>
-                            
-                            <div>
-                                <label for="double_sided_files" class="block text-sm font-medium text-neutral-700 mb-2">Different backs per card</label>
-                                <div class="upload-zone rounded-lg p-4 text-center bg-neutral-50 cursor-pointer">
-                                    <input type="file" id="double_sided_files" name="double_sided_files" multiple accept="image/*" class="sr-only" onchange="updateFileInfo(this, 'double-info')">
-                                    <label for="double_sided_files" class="cursor-pointer">
-                                        <div class="w-6 h-6 mx-auto mb-2 text-neutral-400">
-                                            <svg fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <p class="text-sm font-medium text-neutral-700">Upload matching backs</p>
-                                    </label>
-                                </div>
-                                <div id="double-info" class="mt-1 text-xs text-neutral-600"></div>
-                            </div>
-                        </div>
-                    </details>
+    <!-- Main Interface -->
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-neutral-100">
+                <div class="flex">
+                    <button type="button" class="tab-btn active flex-1 py-4 px-6 text-sm font-medium text-center" data-tab="upload">
+                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                        </svg>
+                        Upload Images
+                    </button>
+                    <button type="button" class="tab-btn flex-1 py-4 px-6 text-sm font-medium text-center" data-tab="plugin">
+                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"></path>
+                        </svg>
+                        Import Decklist
+                    </button>
+                    <button type="button" class="tab-btn flex-1 py-4 px-6 text-sm font-medium text-center" data-tab="offset">
+                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        Offset PDF
+                    </button>
                 </div>
             </div>
 
-            <!-- Step 2: Settings -->
-            <div class="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-                <div class="p-6 border-b border-neutral-100">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-6 h-6 bg-neutral-300 text-neutral-700 text-sm font-medium rounded-full flex items-center justify-center">2</div>
-                        <h3 class="font-medium text-neutral-900">Configure Settings</h3>
-                    </div>
-                    <p class="text-sm text-neutral-600">Basic settings for your card layout</p>
+            <!-- Tab Content -->
+            <div class="p-6">
+                <!-- Upload Tab -->
+                <div id="upload-tab" class="tab-content">
+                    <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data" id="upload-form">
+                        <!-- Primary Upload Zone -->
+                        <div class="space-y-6">
+                            <div class="upload-zone rounded-xl border-2 border-dashed border-neutral-200 p-12 text-center cursor-pointer group" id="main-upload">
+                                <input type="file" id="front_files" name="front_files" multiple accept="image/*" required class="sr-only">
+                                <label for="front_files" class="cursor-pointer">
+                                    <div class="w-16 h-16 mx-auto mb-4 text-neutral-400 group-hover:text-primary-500 transition-colors">
+                                        <svg fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <p class="text-xl font-medium text-neutral-900">Drop your card images here</p>
+                                        <p class="text-neutral-600">or click to browse your files</p>
+                                        <p class="text-sm text-neutral-500">Supports PNG, JPG, and other image formats</p>
+                                    </div>
+                                </label>
+                            </div>
+                            <div id="upload-feedback" class="text-center"></div>
+                        </div>
+
+                        <!-- File Preview Area -->
+                        <div id="file-preview" class="hidden">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-medium text-neutral-900">Selected Files</h3>
+                                <button type="button" onclick="clearFiles()" class="text-sm text-neutral-500 hover:text-neutral-700">Clear all</button>
+                            </div>
+                            <div id="file-list" class="bg-neutral-50 rounded-lg p-4 max-h-40 overflow-y-auto"></div>
+                        </div>
+
+                        <!-- Back Image Options -->
+                        <div id="back-options" class="hidden">
+                            <details class="group border border-neutral-200 rounded-lg">
+                                <summary class="flex items-center gap-2 cursor-pointer p-4 hover:bg-neutral-50">
+                                    <svg class="w-4 h-4 transition-transform group-open:rotate-90 text-neutral-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="font-medium text-neutral-900">Add card backs</span>
+                                    <span class="text-sm text-neutral-500">(optional)</span>
+                                </summary>
+                                
+                                <div class="p-4 pt-0 space-y-4">
+                                    <div class="grid gap-4 md:grid-cols-2">
+                                        <div class="upload-zone rounded-lg border border-neutral-200 p-4 text-center cursor-pointer">
+                                            <input type="file" id="back_files" name="back_files" accept="image/*" class="sr-only">
+                                            <label for="back_files" class="cursor-pointer block">
+                                                <div class="w-8 h-8 mx-auto mb-2 text-neutral-400">
+                                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <p class="text-sm font-medium text-neutral-700">Same back for all</p>
+                                                <p class="text-xs text-neutral-500">One image</p>
+                                            </label>
+                                            <div id="back-info" class="mt-2 text-xs"></div>
+                                        </div>
+                                        
+                                        <div class="upload-zone rounded-lg border border-neutral-200 p-4 text-center cursor-pointer">
+                                            <input type="file" id="double_sided_files" name="double_sided_files" multiple accept="image/*" class="sr-only">
+                                            <label for="double_sided_files" class="cursor-pointer block">
+                                                <div class="w-8 h-8 mx-auto mb-2 text-neutral-400">
+                                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </div>
+                                                <p class="text-sm font-medium text-neutral-700">Different backs</p>
+                                                <p class="text-xs text-neutral-500">Match filenames</p>
+                                            </label>
+                                            <div id="double-info" class="mt-2 text-xs"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+
+                        <!-- Settings Section -->
+                        <div class="border-t border-neutral-100 pt-6">
+                            <h3 class="text-lg font-semibold text-neutral-900 mb-4">Settings</h3>
+                            
+                            <!-- Essential Settings -->
+                            <div class="space-y-4">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label for="card_size" class="block text-sm font-medium text-neutral-700 mb-2">Card Size</label>
+                                        <select id="card_size" name="card_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white text-sm">
+                                            {% for size in card_sizes %}
+                                                <option value="{{ size }}" {% if size == 'standard' %}selected{% endif %}>
+                                                    {{ size.replace('_', ' ').title() }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="paper_size" class="block text-sm font-medium text-neutral-700 mb-2">Paper Size</label>
+                                        <select id="paper_size" name="paper_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white text-sm">
+                                            {% for size in paper_sizes %}
+                                                <option value="{{ size }}" {% if size == 'letter' %}selected{% endif %}>
+                                                    {{ size.replace('_', ' ').title() }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Options -->
+                                <div class="flex flex-wrap gap-4">
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="only_fronts" name="only_fronts" class="focus-ring">
+                                        <span class="text-neutral-700">Front only</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="output_images" name="output_images" class="focus-ring">
+                                        <span class="text-neutral-700">Images (ZIP)</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="load_offset" name="load_offset" {% if saved_offset %}checked{% endif %} class="focus-ring">
+                                        <span class="text-neutral-700">Apply offset</span>
+                                    </label>
+                                </div>
+
+                                <!-- Advanced Options -->
+                                <details class="group">
+                                    <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-600 hover:text-neutral-800">
+                                        <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                        More options
+                                    </summary>
+                                    
+                                    <div class="mt-4 space-y-3">
+                                        <div class="grid gap-3 md:grid-cols-3">
+                                            <div>
+                                                <label for="name" class="block text-sm font-medium text-neutral-700 mb-1">Name</label>
+                                                <input type="text" id="name" name="name" placeholder="My Cards" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="ppi" class="block text-sm font-medium text-neutral-700 mb-1">Quality</label>
+                                                <select id="ppi" name="ppi" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white text-sm">
+                                                    <option value="150">Fast (150 PPI)</option>
+                                                    <option value="300" selected>Standard (300 PPI)</option>
+                                                    <option value="600">High (600 PPI)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="skip_indices" class="block text-sm font-medium text-neutral-700 mb-1">Skip cards</label>
+                                                <input type="text" id="skip_indices" name="skip_indices" placeholder="0,4,8" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
+                                            </div>
+                                        </div>
+                                        <div class="grid gap-3 md:grid-cols-2">
+                                            <div>
+                                                <label for="crop" class="block text-sm font-medium text-neutral-700 mb-1">Crop edges</label>
+                                                <input type="text" id="crop" name="crop" placeholder="3mm" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
+                                            </div>
+                                            <div>
+                                                <label for="extend_corners" class="block text-sm font-medium text-neutral-700 mb-1">Corner fix</label>
+                                                <input type="number" id="extend_corners" name="extend_corners" min="0" value="0" placeholder="10" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="border-t border-neutral-100 pt-6">
+                            <button type="submit" class="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-all" id="upload-btn" disabled>
+                                <span class="flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    Generate Cards
+                                </span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="p-6 space-y-6">
-                    <!-- Essential Settings -->
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label for="card_size" class="block text-sm font-medium text-neutral-900 mb-2">Card Size</label>
-                            <select id="card_size" name="card_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white">
-                                {% for size in card_sizes %}
-                                    <option value="{{ size }}" {% if size == 'standard' %}selected{% endif %}>
-                                        {{ size.replace('_', ' ').title() }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
 
-                        <div>
-                            <label for="paper_size" class="block text-sm font-medium text-neutral-900 mb-2">Paper Size</label>
-                            <select id="paper_size" name="paper_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white">
-                                {% for size in paper_sizes %}
-                                    <option value="{{ size }}" {% if size == 'letter' %}selected{% endif %}>
-                                        {{ size.replace('_', ' ').title() }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Quick Options -->
-                    <div class="space-y-3">
-                        <div class="text-sm font-medium text-neutral-900">Output Options</div>
-                        <div class="grid gap-3 md:grid-cols-3">
-                            <label class="flex items-center gap-2 text-sm cursor-pointer">
-                                <input type="checkbox" id="only_fronts" name="only_fronts" class="focus-ring">
-                                <span class="text-neutral-700">Only front pages</span>
-                            </label>
-
-                            <label class="flex items-center gap-2 text-sm cursor-pointer">
-                                <input type="checkbox" id="output_images" name="output_images" class="focus-ring">
-                                <span class="text-neutral-700">Output images (ZIP)</span>
-                            </label>
-
-                            <label class="flex items-center gap-2 text-sm cursor-pointer">
-                                <input type="checkbox" id="load_offset" name="load_offset" {% if saved_offset %}checked{% endif %} class="focus-ring">
-                                <span class="text-neutral-700">Apply saved offset</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Advanced Options (Progressive Disclosure) -->
-                    <details class="group">
-                        <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-700 hover:text-neutral-900">
-                            <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            Advanced options
-                        </summary>
+                <!-- Plugin Tab -->
+                <div id="plugin-tab" class="tab-content hidden">
+                    <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data" id="plugin-form">
+                        <input type="hidden" name="use_plugin" value="on">
                         
-                        <div class="mt-4 space-y-4">
+                        <!-- Game Selection -->
+                        <div class="space-y-6">
                             <div class="grid gap-4 md:grid-cols-2">
                                 <div>
-                                    <label for="name" class="block text-sm font-medium text-neutral-700 mb-1">Sheet Name</label>
-                                    <input type="text" id="name" name="name" placeholder="My Card Set" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
-                                    <p class="text-xs text-neutral-500 mt-1">Optional label for each page</p>
+                                    <label for="plugin_game" class="block text-sm font-medium text-neutral-900 mb-2">Game</label>
+                                    <select id="plugin_game" name="plugin_game" required class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white">
+                                        <option value="">Select a game...</option>
+                                        {% for game, formats in plugin_games.items() %}
+                                            <option value="{{ game }}">{{ game.upper().replace('_', ' ') }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
-                                
+
                                 <div>
-                                    <label for="skip_indices" class="block text-sm font-medium text-neutral-700 mb-1">Skip Cards</label>
-                                    <input type="text" id="skip_indices" name="skip_indices" placeholder="0,4,8" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
-                                    <p class="text-xs text-neutral-500 mt-1">Comma-separated card positions to skip</p>
+                                    <label for="plugin_format" class="block text-sm font-medium text-neutral-900 mb-2">Format</label>
+                                    <select id="plugin_format" name="plugin_format" required class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white">
+                                        <option value="">Select format...</option>
+                                    </select>
                                 </div>
                             </div>
+
+                            <!-- Decklist Upload -->
+                            <div class="upload-zone rounded-xl border-2 border-dashed border-neutral-200 p-8 text-center cursor-pointer group">
+                                <input type="file" id="decklist_files" name="decklist_files" accept=".txt,.json" required class="sr-only">
+                                <label for="decklist_files" class="cursor-pointer">
+                                    <div class="w-12 h-12 mx-auto mb-4 text-neutral-400 group-hover:text-primary-500 transition-colors">
+                                        <svg fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"></path>
+                                        </svg>
+                                    </div>
+                                    <p class="text-base font-medium text-neutral-900 mb-1">Upload your decklist</p>
+                                    <p class="text-sm text-neutral-600">TXT or JSON format</p>
+                                </label>
+                                <div id="decklist-info" class="mt-2 text-sm"></div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Section -->
+                        <div class="border-t border-neutral-100 pt-6">
+                            <h3 class="text-lg font-semibold text-neutral-900 mb-4">Settings</h3>
                             
-                            <div class="grid gap-4 md:grid-cols-3">
-                                <div>
-                                    <label for="ppi" class="block text-sm font-medium text-neutral-700 mb-1">Resolution (PPI)</label>
-                                    <input type="number" id="ppi" name="ppi" min="72" max="600" value="300" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
-                                    <p class="text-xs text-neutral-500 mt-1">Higher = better quality</p>
+                            <!-- Essential Settings -->
+                            <div class="space-y-4">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label for="plugin_card_size" class="block text-sm font-medium text-neutral-700 mb-2">Card Size</label>
+                                        <select id="plugin_card_size" name="card_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white text-sm">
+                                            {% for size in card_sizes %}
+                                                <option value="{{ size }}" {% if size == 'standard' %}selected{% endif %}>
+                                                    {{ size.replace('_', ' ').title() }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="plugin_paper_size" class="block text-sm font-medium text-neutral-700 mb-2">Paper Size</label>
+                                        <select id="plugin_paper_size" name="paper_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white text-sm">
+                                            {% for size in paper_sizes %}
+                                                <option value="{{ size }}" {% if size == 'letter' %}selected{% endif %}>
+                                                    {{ size.replace('_', ' ').title() }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                 </div>
-                                
-                                <div>
-                                    <label for="quality" class="block text-sm font-medium text-neutral-700 mb-1">Quality</label>
-                                    <input type="number" id="quality" name="quality" min="1" max="100" value="75" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
-                                    <p class="text-xs text-neutral-500 mt-1">1-100 (compression)</p>
-                                </div>
-                                
-                                <div>
-                                    <label for="extend_corners" class="block text-sm font-medium text-neutral-700 mb-1">Corner Extension</label>
-                                    <input type="number" id="extend_corners" name="extend_corners" min="0" value="0" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
-                                    <p class="text-xs text-neutral-500 mt-1">Fix rounded corners (try 10)</p>
+
+                                <!-- Quick Options -->
+                                <div class="flex flex-wrap gap-4">
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="plugin_only_fronts" name="only_fronts" class="focus-ring">
+                                        <span class="text-neutral-700">Front only</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="plugin_output_images" name="output_images" class="focus-ring">
+                                        <span class="text-neutral-700">Images (ZIP)</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="plugin_load_offset" name="load_offset" {% if saved_offset %}checked{% endif %} class="focus-ring">
+                                        <span class="text-neutral-700">Apply offset</span>
+                                    </label>
                                 </div>
                             </div>
-                            
-                            <div>
-                                <label for="crop" class="block text-sm font-medium text-neutral-700 mb-1">Crop</label>
-                                <input type="text" id="crop" name="crop" placeholder="3mm, 0.125in, or 6.5px" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
-                                <p class="text-xs text-neutral-500 mt-1">Remove outer portion of images (e.g., "3mm", "0.125in")</p>
-                            </div>
-                        </div>
-                    </details>
-                </div>
-            </div>
-
-            <!-- Generate Button -->
-            <button type="submit" class="w-full bg-primary-500 hover:bg-primary-600 text-white py-3 px-6 rounded-lg font-medium">
-                Generate Cards
-            </button>
-            </form>
-        </div>
-
-    <!-- Plugin Method -->
-    <div id="plugin-method" class="hidden space-y-6">
-        <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data" class="space-y-6">
-            <input type="hidden" name="use_plugin" value="on">
-            
-            <!-- Step 1: Plugin Configuration -->
-            <div class="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-                <div class="p-6 border-b border-neutral-100">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-6 h-6 bg-primary-500 text-white text-sm font-medium rounded-full flex items-center justify-center">1</div>
-                        <h3 class="font-medium text-neutral-900">Configure Plugin</h3>
-                    </div>
-                    <p class="text-sm text-neutral-600">Select your game and decklist format</p>
-                </div>
-                
-                <div class="p-6 space-y-4">
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label for="plugin_game" class="block text-sm font-medium text-neutral-900 mb-2">Game</label>
-                            <select id="plugin_game" name="plugin_game" onchange="updatePluginFormats()" required class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white">
-                                <option value="">Select a game...</option>
-                                {% for game, formats in plugin_games.items() %}
-                                    <option value="{{ game }}">{{ game.upper().replace('_', ' ') }}</option>
-                                {% endfor %}
-                            </select>
                         </div>
 
-                        <div>
-                            <label for="plugin_format" class="block text-sm font-medium text-neutral-900 mb-2">Format</label>
-                            <select id="plugin_format" name="plugin_format" required class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white">
-                                <option value="">Select format...</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label for="decklist_files" class="block text-sm font-medium text-neutral-900 mb-3">
-                            Decklist File <span class="text-red-500">*</span>
-                        </label>
-                        <div class="upload-zone rounded-lg p-8 text-center bg-neutral-50 cursor-pointer">
-                            <input type="file" id="decklist_files" name="decklist_files" accept=".txt,.json" required class="sr-only" onchange="updateFileInfo(this, 'decklist-info')">
-                            <label for="decklist_files" class="cursor-pointer">
-                                <div class="w-12 h-12 mx-auto mb-4 text-neutral-400">
-                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                        <!-- Action Button -->
+                        <div class="border-t border-neutral-100 pt-6">
+                            <button type="submit" class="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-all" id="plugin-btn" disabled>
+                                <span class="flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"></path>
                                     </svg>
-                                </div>
-                                <p class="text-base font-medium text-neutral-900 mb-1">Upload your decklist</p>
-                                <p class="text-sm text-neutral-600">TXT or JSON format</p>
-                            </label>
+                                    Import & Generate
+                                </span>
+                            </button>
                         </div>
-                        <div id="decklist-info" class="mt-2 text-sm text-neutral-600"></div>
-                    </div>
+                    </form>
+                </div>
 
-                    <!-- MTG Plugin Options -->
-                    <div id="mtg_options" class="hidden mt-4">
-                        <details class="group">
-                            <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-700 hover:text-neutral-900">
-                                <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                </svg>
-                                MTG-specific options
-                            </summary>
-                            
-                            <div class="mt-4 space-y-3">
-                                <div class="grid gap-2 md:grid-cols-2">
-                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                                        <input type="checkbox" id="ignore_set_and_collector_number" name="ignore_set_and_collector_number" class="focus-ring">
-                                        <span class="text-neutral-700">Ignore set/collector numbers</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                                        <input type="checkbox" id="prefer_older_sets" name="prefer_older_sets" class="focus-ring">
-                                        <span class="text-neutral-700">Prefer older sets</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                                        <input type="checkbox" id="prefer_showcase" name="prefer_showcase" class="focus-ring">
-                                        <span class="text-neutral-700">Prefer showcase treatment</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                                        <input type="checkbox" id="prefer_extra_art" name="prefer_extra_art" class="focus-ring">
-                                        <span class="text-neutral-700">Prefer extended art</span>
-                                    </label>
+                <!-- Offset Tab -->
+                <div id="offset-tab" class="tab-content hidden">
+                    <form method="POST" action="{{ url_for('offset.offset_pdf') }}" enctype="multipart/form-data" id="offset-form">
+                        <!-- PDF Upload -->
+                        <div class="space-y-6">
+                            <div class="upload-zone rounded-xl border-2 border-dashed border-neutral-200 p-8 text-center cursor-pointer group">
+                                <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" required class="sr-only">
+                                <label for="pdf_file" class="cursor-pointer">
+                                    <div class="w-12 h-12 mx-auto mb-4 text-neutral-400 group-hover:text-primary-500 transition-colors">
+                                        <svg fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"></path>
+                                        </svg>
+                                    </div>
+                                    <p class="text-base font-medium text-neutral-900 mb-1">Upload PDF to adjust</p>
+                                    <p class="text-sm text-neutral-600">Select the PDF you want to apply offset correction to</p>
+                                </label>
+                                <div id="pdf-info" class="mt-2 text-sm"></div>
+                            </div>
+
+                            <!-- Offset Settings -->
+                            <div class="grid gap-4 md:grid-cols-3">
+                                <div>
+                                    <label for="x_offset" class="block text-sm font-medium text-neutral-700 mb-2">X Offset (pixels)</label>
+                                    <input type="number" id="x_offset" name="x_offset" value="0" step="1" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring">
+                                    <p class="text-xs text-neutral-500 mt-1">+ right, - left</p>
                                 </div>
                                 <div>
-                                    <label for="prefer_set" class="block text-sm font-medium text-neutral-700 mb-1">Preferred Sets</label>
-                                    <input type="text" id="prefer_set" name="prefer_set" placeholder="ELD,WOE" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring text-sm">
-                                    <p class="text-xs text-neutral-500 mt-1">Comma-separated set codes</p>
+                                    <label for="y_offset" class="block text-sm font-medium text-neutral-700 mb-2">Y Offset (pixels)</label>
+                                    <input type="number" id="y_offset" name="y_offset" value="0" step="1" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring">
+                                    <p class="text-xs text-neutral-500 mt-1">+ up, - down</p>
+                                </div>
+                                <div>
+                                    <label for="offset_ppi" class="block text-sm font-medium text-neutral-700 mb-2">PPI</label>
+                                    <input type="number" id="offset_ppi" name="ppi" value="300" min="72" max="600" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring">
                                 </div>
                             </div>
-                        </details>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Step 2: Same settings as upload -->
-            <div class="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-                <div class="p-6 border-b border-neutral-100">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-6 h-6 bg-neutral-300 text-neutral-700 text-sm font-medium rounded-full flex items-center justify-center">2</div>
-                        <h3 class="font-medium text-neutral-900">Configure Settings</h3>
-                    </div>
-                </div>
-                
-                <div class="p-6 space-y-4">
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label for="plugin_card_size" class="block text-sm font-medium text-neutral-900 mb-2">Card Size</label>
-                            <select id="plugin_card_size" name="card_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white">
-                                {% for size in card_sizes %}
-                                    <option value="{{ size }}" {% if size == 'standard' %}selected{% endif %}>
-                                        {{ size.replace('_', ' ').title() }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                            <!-- Save Offset Option -->
+                            <div class="flex items-center gap-3 p-4 border border-neutral-200 rounded-lg">
+                                <input type="checkbox" id="save_offsets" name="save_offsets" class="focus-ring">
+                                <div>
+                                    <span class="text-sm font-medium text-neutral-700">Save offset values for future use</span>
+                                    <p class="text-xs text-neutral-500">These values will be applied automatically in future generations</p>
+                                </div>
+                            </div>
                         </div>
 
-                        <div>
-                            <label for="plugin_paper_size" class="block text-sm font-medium text-neutral-900 mb-2">Paper Size</label>
-                            <select id="plugin_paper_size" name="paper_size" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus-ring bg-white">
-                                {% for size in paper_sizes %}
-                                    <option value="{{ size }}" {% if size == 'letter' %}selected{% endif %}>
-                                        {{ size.replace('_', ' ').title() }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                        <!-- Action Button -->
+                        <div class="border-t border-neutral-100 pt-6">
+                            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-all" id="offset-btn" disabled>
+                                <span class="flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    Apply Offset
+                                </span>
+                            </button>
                         </div>
-                    </div>
-
-                    <div class="grid gap-3 md:grid-cols-3">
-                        <label class="flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="checkbox" id="plugin_only_fronts" name="only_fronts" class="focus-ring">
-                            <span class="text-neutral-700">Only front pages</span>
-                        </label>
-                        <label class="flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="checkbox" id="plugin_output_images" name="output_images" class="focus-ring">
-                            <span class="text-neutral-700">Output images (ZIP)</span>
-                        </label>
-                        <label class="flex items-center gap-2 text-sm cursor-pointer">
-                            <input type="checkbox" id="plugin_load_offset" name="load_offset" {% if saved_offset %}checked{% endif %} class="focus-ring">
-                            <span class="text-neutral-700">Apply saved offset</span>
-                        </label>
-                    </div>
+                    </form>
                 </div>
             </div>
-
-            <!-- Generate Button -->
-            <button type="submit" class="w-full bg-primary-500 hover:bg-primary-600 text-white py-3 px-6 rounded-lg font-medium">
-                Fetch Cards & Generate
-            </button>
-        </form>
-    </div>
-
-    <!-- Tools Section -->
-    <div class="mt-12 pt-8 border-t border-neutral-200">
-        <div class="text-center mb-6">
-            <h2 class="text-lg font-medium text-neutral-900 mb-1">Additional Tools</h2>
-            <p class="text-sm text-neutral-600">Fine-tune your results or manage the application</p>
-        </div>
-        
-        <div class="grid gap-3 md:grid-cols-4">
-            <a href="{{ url_for('offset.offset_pdf') }}" class="flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 text-neutral-700 hover:text-primary-700">
-                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <div class="font-medium text-sm">PDF Offset</div>
-                    <div class="text-xs text-neutral-500">Fine-tune alignment</div>
-                </div>
-            </a>
-            
-            <a href="{{ url_for('calibration.calibration') }}" class="flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 text-neutral-700 hover:text-primary-700">
-                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div>
-                    <div class="font-medium text-sm">Calibration</div>
-                    <div class="text-xs text-neutral-500">Test alignment</div>
-                </div>
-            </a>
-            
-            <form method="POST" action="{{ url_for('main.cleanup') }}" class="block">
-                <button type="submit" onclick="return confirm('Clean up game directories?')" class="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-lg hover:border-red-300 hover:bg-red-50 text-neutral-700 hover:text-red-700">
-                    <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd" />
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="font-medium text-sm">Clean Up</div>
-                        <div class="text-xs text-neutral-500">Remove temp files</div>
-                    </div>
-                </button>
-            </form>
-            
-            <a href="{{ url_for('api.version') }}" class="flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-lg hover:border-primary-300 hover:bg-primary-50 text-neutral-700 hover:text-primary-700">
-                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div>
-                    <div class="font-medium text-sm">Version Info</div>
-                    <div class="text-xs text-neutral-500">API details</div>
-                </div>
-            </a>
         </div>
     </div>
 
-    <!-- Quick Reference -->
-    <details class="group mt-8">
-        <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-600 hover:text-neutral-900">
-            <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-            </svg>
-            Card sizes and formats reference
-        </summary>
-        
-        <div class="mt-4 bg-neutral-50 rounded-lg p-4">
-            <div class="grid gap-6 md:grid-cols-2">
-                <div>
-                    <div class="font-medium text-neutral-900 mb-2">Card Sizes</div>
-                    <div class="space-y-1 text-sm text-neutral-600">
-                        <div><strong>Standard:</strong> MTG, Pokémon, Lorcana</div>
-                        <div><strong>Japanese:</strong> Yu-Gi-Oh!</div>
-                        <div><strong>Poker:</strong> Traditional playing cards</div>
-                        <div><strong>Bridge:</strong> Bridge cards</div>
-                        <div><strong>Tarot:</strong> Tarot cards</div>
-                    </div>
-                </div>
-                <div>
-                    <div class="font-medium text-neutral-900 mb-2">Plugin Formats</div>
-                    <div class="space-y-1 text-sm text-neutral-600">
-                        <div><strong>MTG:</strong> simple, mtga, mtgo, moxfield</div>
-                        <div><strong>Yu-Gi-Oh!:</strong> ydke, ydk</div>
-                        <div><strong>Lorcana:</strong> dreamborn</div>
-                        <div><strong>Digimon:</strong> digimoncardio, digimonmeta</div>
-                        <div><strong>Others:</strong> Various formats available</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </details>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    const pluginFormats = {{ plugin_games | tojson }};
+<script type="text/javascript">
+    // @ts-nocheck
+    const pluginFormats = {{ plugin_games | tojson | safe }};
+    let currentTab = 'upload';
     
-    // Method switching
-    function showMethod(method) {
-        const uploadMethod = document.getElementById('upload-method');
-        const pluginMethod = document.getElementById('plugin-method');
+    // Initialize the interface
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeTabSwitching();
+        initializeFileHandling();
+        initializeFormValidation();
+        initializeDragAndDrop();
+        updateButtons();
         
-        if (method === 'upload') {
-            uploadMethod.classList.remove('hidden');
-            pluginMethod.classList.add('hidden');
+        // Auto-populate offset values if saved offsets exist
+        {% if saved_offset %}
+        document.getElementById('x_offset').value = {{ saved_offset.x_offset }};
+        document.getElementById('y_offset').value = {{ saved_offset.y_offset }};
+        {% endif %}
+        
+        // Handle URL hash for direct tab access
+        const hash = window.location.hash.substring(1);
+        if (hash && ['upload', 'plugin', 'offset'].includes(hash)) {
+            switchTab(hash);
+        }
+    });
+    
+    // Tab switching
+    function initializeTabSwitching() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tab = this.dataset.tab;
+                switchTab(tab);
+            });
+        });
+    }
+    
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // Update button states
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.tab === tab) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Show/hide content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        document.getElementById(tab + '-tab').classList.remove('hidden');
+        
+        updateButtons();
+    }
+    
+    // File handling
+    function initializeFileHandling() {
+        // Front files
+        const frontFiles = document.getElementById('front_files');
+        if (frontFiles) {
+            frontFiles.addEventListener('change', function() {
+                handleFileSelect(this, 'upload-feedback', 'file-preview', 'file-list', 'back-options');
+            });
+        }
+        
+        // Back files
+        const backFiles = document.getElementById('back_files');
+        if (backFiles) {
+            backFiles.addEventListener('change', function() {
+                updateFileInfo(this, 'back-info');
+            });
+        }
+        
+        // Double sided files
+        const doubleFiles = document.getElementById('double_sided_files');
+        if (doubleFiles) {
+            doubleFiles.addEventListener('change', function() {
+                updateFileInfo(this, 'double-info');
+            });
+        }
+        
+        // Decklist files
+        const decklistFiles = document.getElementById('decklist_files');
+        if (decklistFiles) {
+            decklistFiles.addEventListener('change', function() {
+                updateFileInfo(this, 'decklist-info');
+            });
+        }
+        
+        // PDF files
+        const pdfFiles = document.getElementById('pdf_file');
+        if (pdfFiles) {
+            pdfFiles.addEventListener('change', function() {
+                updateFileInfo(this, 'pdf-info');
+            });
+        }
+    }
+    
+    function handleFileSelect(input, feedbackId, previewId, listId, optionsId) {
+        const files = Array.from(input.files);
+        const uploadFeedback = document.getElementById(feedbackId);
+        const filePreview = document.getElementById(previewId);
+        const fileList = document.getElementById(listId);
+        const backOptions = document.getElementById(optionsId);
+        
+        if (files.length > 0) {
+            uploadFeedback.innerHTML = `
+                <div class="inline-flex items-center gap-2 text-emerald-600 font-medium">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    ${files.length} image${files.length === 1 ? '' : 's'} ready
+                </div>
+            `;
+            
+            if (fileList) {
+                fileList.innerHTML = files.map((file, index) => `
+                    <div class="flex items-center gap-3 p-3 ${index > 0 ? 'border-t border-neutral-200' : ''} hover:bg-neutral-100 transition-colors">
+                        <div class="w-8 h-8 bg-emerald-100 rounded flex items-center justify-center text-emerald-600">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-neutral-900 truncate">${file.name}</p>
+                            <p class="text-xs text-neutral-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            if (filePreview) filePreview.classList.remove('hidden');
+            if (backOptions) backOptions.classList.remove('hidden');
         } else {
-            uploadMethod.classList.add('hidden');
-            pluginMethod.classList.remove('hidden');
+            uploadFeedback.innerHTML = '';
+            if (filePreview) filePreview.classList.add('hidden');
+            if (backOptions) backOptions.classList.add('hidden');
+        }
+        
+        updateButtons();
+    }
+    
+    function updateFileInfo(input, infoId) {
+        const infoDiv = document.getElementById(infoId);
+        const count = input.files.length;
+        
+        if (count > 0) {
+            if (count === 1) {
+                infoDiv.innerHTML = `<span class="text-emerald-600 font-medium">✓ ${input.files[0].name}</span>`;
+            } else {
+                infoDiv.innerHTML = `<span class="text-emerald-600 font-medium">✓ ${count} files selected</span>`;
+            }
+        } else {
+            infoDiv.innerHTML = '';
+        }
+        
+        updateButtons();
+    }
+    
+    function clearFiles() {
+        document.getElementById('front_files').value = '';
+        document.getElementById('file-preview').classList.add('hidden');
+        document.getElementById('back-options').classList.add('hidden');
+        document.getElementById('upload-feedback').innerHTML = '';
+        updateButtons();
+    }
+    
+    // Form validation
+    function initializeFormValidation() {
+        // Plugin game selection
+        const pluginGame = document.getElementById('plugin_game');
+        if (pluginGame) {
+            pluginGame.addEventListener('change', function() {
+                updatePluginFormats();
+                updateButtons();
+            });
+        }
+        
+        // All form inputs
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('change', updateButtons);
+            input.addEventListener('input', updateButtons);
+        });
+    }
+    
+    function updateButtons() {
+        const uploadBtn = document.getElementById('upload-btn');
+        const pluginBtn = document.getElementById('plugin-btn');
+        const offsetBtn = document.getElementById('offset-btn');
+        
+        // Update upload button
+        if (uploadBtn) {
+            const frontFiles = document.getElementById('front_files');
+            const isValid = frontFiles && frontFiles.files.length > 0;
+            uploadBtn.disabled = !isValid;
+        }
+        
+        // Update plugin button
+        if (pluginBtn) {
+            const game = document.getElementById('plugin_game');
+            const format = document.getElementById('plugin_format');
+            const decklist = document.getElementById('decklist_files');
+            const isValid = game && game.value && format && format.value && decklist && decklist.files.length > 0;
+            pluginBtn.disabled = !isValid;
+        }
+        
+        // Update offset button
+        if (offsetBtn) {
+            const pdfFile = document.getElementById('pdf_file');
+            const isValid = pdfFile && pdfFile.files.length > 0;
+            offsetBtn.disabled = !isValid;
         }
     }
     
@@ -528,10 +632,6 @@
         
         formatSelect.innerHTML = '<option value="">Select format...</option>';
         
-        // Hide MTG options
-        const mtgOptions = document.getElementById('mtg_options');
-        if (mtgOptions) mtgOptions.classList.add('hidden');
-        
         if (selectedGame && pluginFormats[selectedGame]) {
             pluginFormats[selectedGame].forEach(format => {
                 const option = document.createElement('option');
@@ -539,56 +639,40 @@
                 option.textContent = format.toUpperCase().replace('_', ' ');
                 formatSelect.appendChild(option);
             });
-            
-            // Show MTG options if MTG selected
-            if (selectedGame === 'mtg' && mtgOptions) {
-                mtgOptions.classList.remove('hidden');
-            }
         }
     }
     
-    // File upload feedback
-    function updateFileInfo(input, infoId) {
-        const count = input.files.length;
-        const infoDiv = document.getElementById(infoId);
-        if (count > 0) {
-            if (count === 1) {
-                infoDiv.textContent = `${input.files[0].name}`;
-            } else {
-                infoDiv.textContent = `${count} files selected`;
-            }
-            infoDiv.className = 'mt-2 text-sm text-green-600 font-medium';
-        } else {
-            infoDiv.textContent = '';
-            infoDiv.className = 'mt-2 text-sm text-neutral-600';
-        }
-    }
-
     // Drag and drop
-    document.querySelectorAll('.upload-zone').forEach(zone => {
-        const input = zone.querySelector('input[type="file"]');
-        if (!input) return;
-        
-        zone.addEventListener('dragover', e => {
-            e.preventDefault();
-            zone.classList.add('dragover');
-        });
-        
-        zone.addEventListener('dragleave', e => {
-            e.preventDefault();
-            zone.classList.remove('dragover');
-        });
-        
-        zone.addEventListener('drop', e => {
-            e.preventDefault();
-            zone.classList.remove('dragover');
+    function initializeDragAndDrop() {
+        document.querySelectorAll('.upload-zone').forEach(zone => {
+            const input = zone.querySelector('input[type="file"]');
+            if (!input) return;
             
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                input.files = files;
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-            }
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.add('dragover'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                zone.addEventListener(eventName, () => zone.classList.remove('dragover'), false);
+            });
+            
+            zone.addEventListener('drop', e => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    input.files = files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
         });
-    });
+    }
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
 </script>
 {% endblock %}

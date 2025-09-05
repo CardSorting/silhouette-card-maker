@@ -1,0 +1,13 @@
+<!-- File Upload Component -->
+<div class="form-group">
+    <label for="{{ field_id }}">{{ label }}{% if required %} *{% endif %}</label>
+    <div class="file-upload">
+        <input type="file" 
+               id="{{ field_id }}" 
+               name="{{ field_name }}" 
+               {% if multiple %}multiple{% endif %}
+               {% if accept %}accept="{{ accept }}"{% endif %}
+               {% if required %}required{% endif %}>
+        <div class="help-text">{{ help_text }}</div>
+    </div>
+</div>

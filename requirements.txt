@@ -8,3 +8,15 @@ pypdfium2==4.30.0
 split-image==2.0.1
 Flask==3.0.0
 Werkzeug==3.0.1
+Flask-CORS==4.0.0
+flask-limiter==3.5.0
+python-dotenv==1.0.1
+psutil==5.9.8
+Flask-JWT-Extended==4.6.0
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+bcrypt==4.1.2
+marshmallow==3.20.1
+flask-marshmallow==0.15.0
+gunicorn==21.2.0

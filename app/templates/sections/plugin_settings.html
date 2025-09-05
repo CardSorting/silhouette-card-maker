@@ -1,0 +1,57 @@
+<!-- Plugin Settings Section -->
+<div class="section">
+    <h3>🔌 Plugin Settings</h3>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label for="plugin_game">Game</label>
+            <select id="plugin_game" name="plugin_game" onchange="updatePluginFormats()" required>
+                <option value="">Select a game...</option>
+                {% for game, formats in plugin_games.items() %}
+                    <option value="{{ game }}">{{ game.upper().replace('_', ' ') }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="plugin_format">Decklist Format</label>
+            <select id="plugin_format" name="plugin_format" required>
+                <option value="">Select format...</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="decklist_files">Decklist File *</label>
+        <div class="file-upload">
+            <input type="file" id="decklist_files" name="decklist_files" accept=".txt,.json" required>
+            <div class="help-text">Upload your decklist file (TXT or JSON format)</div>
+        </div>
+    </div>
+
+    <!-- MTG Plugin Options -->
+    <div id="mtg_options" class="plugin-options">
+        <h4>MTG Plugin Options</h4>
+        <div class="checkbox-group">
+            <input type="checkbox" id="ignore_set_and_collector_number" name="ignore_set_and_collector_number">
+            <label for="ignore_set_and_collector_number">Ignore set and collector numbers</label>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="prefer_older_sets" name="prefer_older_sets">
+            <label for="prefer_older_sets">Prefer older sets</label>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="prefer_showcase" name="prefer_showcase">
+            <label for="prefer_showcase">Prefer showcase treatment</label>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="prefer_extra_art" name="prefer_extra_art">
+            <label for="prefer_extra_art">Prefer full/borderless/extended art</label>
+        </div>
+        <div class="form-group">
+            <label for="prefer_set">Preferred Sets (comma-separated)</label>
+            <input type="text" id="prefer_set" name="prefer_set" placeholder="e.g. ELD,WOE">
+            <div class="help-text">Prefer cards from these sets when available</div>
+        </div>
+    </div>
+</div>

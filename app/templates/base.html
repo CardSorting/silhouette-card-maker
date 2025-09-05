@@ -5,147 +5,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Silhouette Card Maker{% endblock %}</title>
     
-    <!-- TailwindCSS from CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block extra_css %}{% endblock %}
     
-    <!-- Custom TailwindCSS config -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            700: '#0369a1'
-                        },
-                        neutral: {
-                            50: '#fafafa',
-                            100: '#f5f5f5',
-                            200: '#e5e5e5',
-                            300: '#d4d4d4',
-                            400: '#a3a3a3',
-                            500: '#737373',
-                            600: '#525252',
-                            700: '#404040',
-                            800: '#262626',
-                            900: '#171717'
-                        }
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.3s ease-out',
-                        'slide-in': 'slideIn 0.4s ease-out',
-                        'scale-in': 'scaleIn 0.2s ease-out'
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Minimal custom styles -->
-    <style>
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateY(8px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        
-        /* Smooth transitions */
-        * {
-            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-            transition-duration: 150ms;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* Custom focus styles */
-        .focus-ring:focus {
-            outline: 2px solid #0ea5e9;
-            outline-offset: 2px;
-        }
-        
-        /* File upload minimal styling */
-        .upload-zone {
-            border: 2px dashed #d4d4d4;
-            transition: all 0.2s ease;
-        }
-        
-        .upload-zone:hover,
-        .upload-zone.dragover {
-            border-color: #0ea5e9;
-            background-color: #f0f9ff;
-        }
-    </style>
-    
-    {% block extra_head %}{% endblock %}
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎴</text></svg>">
 </head>
-<body class="min-h-screen bg-neutral-50">
-    <!-- Minimal Header -->
-    <header class="bg-white border-b border-neutral-200">
-        <div class="max-w-4xl mx-auto px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
-                        S
-                    </div>
-                    <h1 class="text-lg font-semibold text-neutral-900">
-                        Silhouette Card Maker
-                    </h1>
-                </div>
-                {% if request.endpoint != 'main.index' %}
-                <a href="{{ url_for('main.index') }}" 
-                   class="text-sm text-neutral-600 hover:text-neutral-900 flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-                    </svg>
-                    Back
-                </a>
-                {% endif %}
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🎴 Silhouette Card Maker</h1>
+            <p class="subtitle">{% block subtitle %}Create custom card PDFs with registration marks for silhouette cutting machines{% endblock %}</p>
+            
+            {% if saved_offset %}
+            <div class="offset-display">
+                <strong>📍 Saved Offset:</strong> X: {{ saved_offset.x_offset }}, Y: {{ saved_offset.y_offset }}
             </div>
-        </div>
-    </header>
+            {% endif %}
+        </header>
 
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto px-6 py-8">
+        <!-- Version Info -->
+        {% block version_info %}
+        <div class="version-info">
+            <strong>🚀 Enhanced Flask Version</strong> - All CLI features + Web interface<br>
+            <small>Supports plugins, offset correction, image output, and advanced options</small>
+        </div>
+        {% endblock %}
+
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages() %}
             {% if messages %}
-                <div class="mb-6 animate-slide-in">
-                    {% for message in messages %}
-                        <div class="{% if 'Error' in message or 'error' in message %}bg-red-50 border-red-200 text-red-800{% else %}bg-green-50 border-green-200 text-green-800{% endif %} border rounded-lg p-4 mb-3">
-                            <div class="flex items-start gap-3">
-                                <div class="flex-shrink-0 mt-0.5">
-                                    {% if 'Error' in message or 'error' in message %}
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                                        </svg>
-                                    {% else %}
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                        </svg>
-                                    {% endif %}
-                                </div>
-                                <p class="text-sm font-medium">{{ message }}</p>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
+                {% for message in messages %}
+                    <div class="alert {% if 'Error' in message or 'error' in message %}alert-error{% else %}alert-success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             {% endif %}
         {% endwith %}
 
-        {% block content %}{% endblock %}
-    </main>
+        <!-- Utility Navigation -->
+        {% block utility_nav %}
+        <nav class="utility-buttons">
+            <a href="{{ url_for('main.index') }}" class="utility-btn">
+                🏠 Home
+            </a>
+            <a href="{{ url_for('main.grid_upload') }}" class="utility-btn">
+                📊 Grid Upload
+            </a>
+            <a href="{{ url_for('offset.offset_pdf') }}" class="utility-btn">
+                📐 PDF Offset Tool
+            </a>
+            <a href="{{ url_for('calibration.calibration') }}" class="utility-btn">
+                🎯 Generate Calibration
+            </a>
+            <form method="POST" action="{{ url_for('main.cleanup') }}" style="display: inline;">
+                <button type="submit" class="utility-btn danger-btn">🗑️ Clean Game Dirs</button>
+            </form>
+            <a href="{{ url_for('api.version') }}" class="utility-btn">
+                ℹ️ Version Info
+            </a>
+        </nav>
+        {% endblock %}
 
-    {% block scripts %}{% endblock %}
+        <!-- Main Content -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            {% block footer %}
+            <div class="card-reference">
+                <h4>📋 Card Size Reference</h4>
+                <ul>
+                    <li><strong>Standard (63x88mm):</strong> Magic, Pokémon, Lorcana, One Piece</li>
+                    <li><strong>Japanese (59x86mm):</strong> Yu-Gi-Oh!</li>
+                    <li><strong>Poker (2.5x3.5in):</strong> Traditional playing cards</li>
+                    <li><strong>Bridge (2.25x3.5in):</strong> Bridge cards</li>
+                    <li><strong>Tarot (2.75x4.75in):</strong> Tarot cards</li>
+                    <li><strong>Domino (1.75x3.5in):</strong> Domino cards</li>
+                </ul>
+            </div>
+            {% endblock %}
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

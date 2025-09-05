@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Silhouette Card Maker - Enhanced{% endblock %}
+
+{% block subtitle %}Complete web interface with 1:1 CLI feature parity{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pass plugin data to JavaScript
+    window.pluginFormats = {{ plugin_games | tojson }};
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Main Tabs -->
+{% set tabs = [
+    {'id': 'manual', 'label': '📁 Manual Upload', 'active': True},
+    {'id': 'plugin', 'label': '🔌 Plugin Mode', 'active': False}
+] %}
+{% include 'components/tabs.html' %}
+
+<!-- Manual Upload Tab Content -->
+<div id="manual" class="tab-content active">
+    <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data">
+        <!-- Card Images Section -->
+        {% include 'components/form_section.html' %}
+        {% set title = '📁 Card Images' %}
+        {% block section_content %}
+            {% include 'components/file_upload.html' %}
+            {% set field_id = 'front_files' %}
+            {% set field_name = 'front_files' %}
+            {% set label = 'Front Images' %}
+            {% set multiple = True %}
+            {% set accept = 'image/*' %}
+            {% set required = True %}
+            {% set help_text = 'Select all front card images (PNG, JPG, etc.) - Required' %}
+
+            {% include 'components/file_upload.html' %}
+            {% set field_id = 'back_files' %}
+            {% set field_name = 'back_files' %}
+            {% set label = 'Back Images (Optional)' %}
+            {% set multiple = True %}
+            {% set accept = 'image/*' %}
+            {% set help_text = 'Select back image(s) - if multiple, you\'ll choose which one to use' %}
+
+            {% include 'components/file_upload.html' %}
+            {% set field_id = 'double_sided_files' %}
+            {% set field_name = 'double_sided_files' %}
+            {% set label = 'Double-Sided Back Images (Optional)' %}
+            {% set multiple = True %}
+            {% set accept = 'image/*' %}
+            {% set help_text = 'Select back images for double-sided cards (filenames must match front images)' %}
+        {% endblock %}
+
+        <!-- Basic Settings Section -->
+        {% include 'components/form_section.html' %}
+        {% set title = '⚙️ Basic Settings' %}
+        {% block section_content %}
+            <div class="form-row">
+                {% include 'components/select_field.html' %}
+                {% set field_id = 'card_size' %}
+                {% set field_name = 'card_size' %}
+                {% set label = 'Card Size' %}
+                {% set options = {} %}
+                {% for size in card_sizes %}
+                    {% set _ = options.update({size: size.replace('_', ' ').title()}) %}
+                {% endfor %}
+                {% set selected = 'standard' %}
+
+                {% include 'components/select_field.html' %}
+                {% set field_id = 'paper_size' %}
+                {% set field_name = 'paper_size' %}
+                {% set label = 'Paper Size' %}
+                {% set options = {} %}
+                {% for size in paper_sizes %}
+                    {% set _ = options.update({size: size.replace('_', ' ').title()}) %}
+                {% endfor %}
+                {% set selected = 'letter' %}
+            </div>
+
+            <div class="form-row">
+                {% include 'components/checkbox_field.html' %}
+                {% set field_id = 'only_fronts' %}
+                {% set field_name = 'only_fronts' %}
+                {% set label = 'Only generate front pages (exclude backs)' %}
+
+                {% include 'components/checkbox_field.html' %}
+                {% set field_id = 'output_images' %}
+                {% set field_name = 'output_images' %}
+                {% set label = 'Output images instead of PDF (ZIP file)' %}
+            </div>
+
+            {% include 'components/checkbox_field.html' %}
+            {% set field_id = 'load_offset' %}
+            {% set field_name = 'load_offset' %}
+            {% set label = 'Apply saved offset correction' %}
+            {% set checked = saved_offset is defined %}
+        {% endblock %}
+
+        <!-- Advanced Options Section -->
+        {% include 'components/form_section.html' %}
+        {% set title = '🔧 Advanced Options' %}
+        {% block section_content %}
+            <div class="form-row">
+                {% include 'components/input_field.html' %}
+                {% set field_id = 'crop' %}
+                {% set field_name = 'crop' %}
+                {% set label = 'Crop' %}
+                {% set input_type = 'text' %}
+                {% set placeholder = 'e.g. 3mm, 0.125in, 6.5' %}
+                {% set help_text = 'Crop outer portion of images to remove existing bleed' %}
+
+                {% include 'components/input_field.html' %}
+                {% set field_id = 'extend_corners' %}
+                {% set field_name = 'extend_corners' %}
+                {% set label = 'Extend Corners' %}
+                {% set input_type = 'number' %}
+                {% set min = '0' %}
+                {% set value = '0' %}
+                {% set help_text = 'Reduce artifacts from rounded corners (try 10)' %}
+            </div>
+
+            <div class="form-row-3">
+                {% include 'components/input_field.html' %}
+                {% set field_id = 'ppi' %}
+                {% set field_name = 'ppi' %}
+                {% set label = 'PPI (Pixels Per Inch)' %}
+                {% set input_type = 'number' %}
+                {% set min = '72' %}
+                {% set max = '600' %}
+                {% set value = '300' %}
+                {% set help_text = 'Higher = better quality, larger files' %}
+
+                {% include 'components/input_field.html' %}
+                {% set field_id = 'quality' %}
+                {% set field_name = 'quality' %}
+                {% set label = 'Quality' %}
+                {% set input_type = 'number' %}
+                {% set min = '1' %}
+                {% set max = '100' %}
+                {% set value = '75' %}
+                {% set help_text = 'Compression (1-100, higher = better)' %}
+
+                {% include 'components/input_field.html' %}
+                {% set field_id = 'skip_indices' %}
+                {% set field_name = 'skip_indices' %}
+                {% set label = 'Skip Cards' %}
+                {% set input_type = 'text' %}
+                {% set placeholder = '0,4,8' %}
+                {% set help_text = 'Skip cards at these positions' %}
+            </div>
+
+            {% include 'components/input_field.html' %}
+            {% set field_id = 'name' %}
+            {% set field_name = 'name' %}
+            {% set label = 'Sheet Name' %}
+            {% set input_type = 'text' %}
+            {% set placeholder = 'e.g. My Card Set' %}
+            {% set help_text = 'Label each page with this name (optional)' %}
+        {% endblock %}
+
+        <button type="submit">🎯 Generate Cards</button>
+    </form>
+</div>
+
+<!-- Plugin Mode Tab Content -->
+<div id="plugin" class="tab-content">
+    <form method="POST" action="{{ url_for('main.generate') }}" enctype="multipart/form-data">
+        <input type="hidden" name="use_plugin" value="on">
+        
+        <!-- Plugin Settings Section -->
+        {% include 'components/form_section.html' %}
+        {% set title = '🔌 Plugin Settings' %}
+        {% block section_content %}
+            <div class="form-row">
+                {% include 'components/select_field.html' %}
+                {% set field_id = 'plugin_game' %}
+                {% set field_name = 'plugin_game' %}
+                {% set label = 'Game' %}
+                {% set required = True %}
+                {% set placeholder = 'Select a game...' %}
+                {% set options = {} %}
+                {% for game, formats in plugin_games.items() %}
+                    {% set _ = options.update({game: game.upper().replace('_', ' ')}) %}
+                {% endfor %}
+
+                {% include 'components/select_field.html' %}
+                {% set field_id = 'plugin_format' %}
+                {% set field_name = 'plugin_format' %}
+                {% set label = 'Decklist Format' %}
+                {% set required = True %}
+                {% set placeholder = 'Select format...' %}
+                {% set options = {} %}
+            </div>
+
+            {% include 'components/file_upload.html' %}
+            {% set field_id = 'decklist_files' %}
+            {% set field_name = 'decklist_files' %}
+            {% set label = 'Decklist File' %}
+            {% set required = True %}
+            {% set accept = '.txt,.json' %}
+            {% set help_text = 'Upload your decklist file (TXT or JSON format)' %}
+
+            <!-- MTG Plugin Options -->
+            <div id="mtg_options" class="plugin-options">
+                <h4>MTG Plugin Options</h4>
+                {% include 'components/checkbox_field.html' %}
+                {% set field_id = 'ignore_set_and_collector_number' %}
+                {% set field_name = 'ignore_set_and_collector_number' %}
+                {% set label = 'Ignore set and collector numbers' %}
+
+                {% include 'components/checkbox_field.html' %}
+                {% set field_id = 'prefer_older_sets' %}
+                {% set field_name = 'prefer_older_sets' %}
+                {% set label = 'Prefer older sets' %}
+
+                {% include 'components/checkbox_field.html' %}
+                {% set field_id = 'prefer_showcase' %}
+                {% set field_name = 'prefer_showcase' %}
+                {% set label = 'Prefer showcase treatment' %}
+
+                {% include 'components/checkbox_field.html' %}
+                {% set field_id = 'prefer_extra_art' %}
+                {% set field_name = 'prefer_extra_art' %}
+                {% set label = 'Prefer full/borderless/extended art' %}
+
+                {% include 'components/input_field.html' %}
+                {% set field_id = 'prefer_set' %}
+                {% set field_name = 'prefer_set' %}
+                {% set label = 'Preferred Sets (comma-separated)' %}
+                {% set input_type = 'text' %}
+                {% set placeholder = 'e.g. ELD,WOE' %}
+                {% set help_text = 'Prefer cards from these sets when available' %}
+            </div>
+        {% endblock %}
+
+        <!-- Card Generation Settings Section -->
+        {% include 'components/form_section.html' %}
+        {% set title = '⚙️ Card Generation Settings' %}
+        {% block section_content %}
+            <div class="form-row">
+                {% include 'components/select_field.html' %}
+                {% set field_id = 'plugin_card_size' %}
+                {% set field_name = 'card_size' %}
+                {% set label = 'Card Size' %}
+                {% set options = {} %}
+                {% for size in card_sizes %}
+                    {% set _ = options.update({size: size.replace('_', ' ').title()}) %}
+                {% endfor %}
+                {% set selected = 'standard' %}
+
+                {% include 'components/select_field.html' %}
+                {% set field_id = 'plugin_paper_size' %}
+                {% set field_name = 'paper_size' %}
+                {% set label = 'Paper Size' %}
+                {% set options = {} %}
+                {% for size in paper_sizes %}
+                    {% set _ = options.update({size: size.replace('_', ' ').title()}) %}
+                {% endfor %}
+                {% set selected = 'letter' %}
+            </div>
+
+            <div class="form-row">
+                {% include 'components/checkbox_field.html' %}
+                {% set field_id = 'plugin_only_fronts' %}
+                {% set field_name = 'only_fronts' %}
+                {% set label = 'Only generate front pages' %}
+
+                {% include 'components/checkbox_field.html' %}
+                {% set field_id = 'plugin_output_images' %}
+                {% set field_name = 'output_images' %}
+                {% set label = 'Output images instead of PDF' %}
+            </div>
+
+            {% include 'components/checkbox_field.html' %}
+            {% set field_id = 'plugin_load_offset' %}
+            {% set field_name = 'load_offset' %}
+            {% set label = 'Apply saved offset correction' %}
+            {% set checked = saved_offset is defined %}
+        {% endblock %}
+
+        <button type="submit">🔌 Fetch Cards & Generate</button>
+    </form>
+</div>
+
+<!-- Plugin Format Reference -->
+<div class="card-reference">
+    <h4>🔌 Plugin Format Reference</h4>
+    <ul>
+        <li><strong>MTG:</strong> simple, mtga, mtgo, archidekt, deckstats, moxfield, scryfall_json</li>
+        <li><strong>Yu-Gi-Oh!:</strong> ydke, ydk</li>
+        <li><strong>One Piece:</strong> optcgsim, egman</li>
+        <li><strong>Lorcana:</strong> dreamborn</li>
+        <li><strong>Riftbound:</strong> tts, pixelborn, piltover_archive</li>
+        <li><strong>Gundam:</strong> deckplanet, limitless, egman, exburst</li>
+        <li><strong>Digimon:</strong> tts, digimoncardio, digimoncarddev, digimoncardapp, digimonmeta, untap</li>
+        <li><strong>Grand Archive:</strong> omnideck</li>
+        <li><strong>Netrunner:</strong> text, bbcode, markdown, plain_text, jinteki</li>
+        <li><strong>Altered:</strong> ajordat</li>
+        <li><strong>Flesh and Blood:</strong> fabrary</li>
+    </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+<!-- Select Field Component -->
+<div class="form-group">
+    <label for="{{ field_id }}">{{ label }}{% if required %} *{% endif %}</label>
+    <select id="{{ field_id }}" name="{{ field_name }}" {% if required %}required{% endif %}>
+        {% if placeholder %}
+        <option value="">{{ placeholder }}</option>
+        {% endif %}
+        {% for option_value, option_label in options.items() %}
+        <option value="{{ option_value }}" {% if option_value == selected %}selected{% endif %}>
+            {{ option_label }}
+        </option>
+        {% endfor %}
+    </select>
+    {% if help_text %}
+    <div class="help-text">{{ help_text }}</div>
+    {% endif %}
+</div>

@@ -1,0 +1,15 @@
+<!-- Tabs Component -->
+<div class="tabs">
+    {% for tab in tabs %}
+    <button class="tab {% if tab.active %}active{% endif %}" 
+            onclick="showTab('{{ tab.id }}')">
+        {{ tab.label }}
+    </button>
+    {% endfor %}
+</div>
+
+{% for tab in tabs %}
+<div id="{{ tab.id }}" class="tab-content {% if tab.active %}active{% endif %}">
+    {% block tab_content %}{% endblock %}
+</div>
+{% endfor %}

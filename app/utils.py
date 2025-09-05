@@ -32,16 +32,47 @@ def create_temp_directories():
 
 
 def save_uploaded_files(files, directory):
-    """Save uploaded files to a directory"""
+    """Save uploaded files to a directory with enhanced validation"""
     from utilities import delete_hidden_files_in_directory
+    from flask import current_app
     
     saved_files = []
+    total_size = 0
+    max_size = current_app.config.get('MAX_CONTENT_LENGTH', 64 * 1024 * 1024)
+    
     for file in files:
-        if file and file.filename and allowed_file(file.filename):
+        if not file or not file.filename:
+            continue
+            
+        # Check file extension
+        if not allowed_file(file.filename):
+            current_app.logger.warning(f'File {file.filename} has invalid extension')
+            continue
+        
+        # Check file size
+        file.seek(0, 2)  # Seek to end
+        file_size = file.tell()
+        file.seek(0)  # Reset to beginning
+        
+        if file_size > max_size:
+            current_app.logger.warning(f'File {file.filename} exceeds size limit')
+            continue
+            
+        total_size += file_size
+        if total_size > max_size:
+            current_app.logger.warning(f'Total upload size would exceed limit')
+            break
+        
+        # Save file
+        try:
             filename = secure_filename(file.filename)
             file_path = os.path.join(directory, filename)
             file.save(file_path)
             saved_files.append(filename)
+            current_app.logger.info(f'Saved file: {filename} ({file_size} bytes)')
+        except Exception as e:
+            current_app.logger.error(f'Failed to save file {file.filename}: {str(e)}')
+            continue
     
     # Clean up hidden files like CLI does
     delete_hidden_files_in_directory(directory)

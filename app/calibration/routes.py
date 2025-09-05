@@ -1,10 +1,13 @@
-from flask import flash, redirect, url_for
+from flask import flash, redirect, url_for, render_template
 from app.calibration import bp
 
 
-@bp.route('/')
+@bp.route('/', methods=['GET', 'POST'])
 def calibration():
     """Generate calibration PDFs for all paper sizes"""
+    if request.method == 'GET':
+        return render_template('calibration.html')
+    
     try:
         # Import and run calibration script
         import calibration
@@ -12,4 +15,4 @@ def calibration():
     except Exception as e:
         flash(f'Error generating calibration PDFs: {str(e)}')
     
-    return redirect(url_for('main.index'))
+    return redirect(url_for('calibration.calibration'))

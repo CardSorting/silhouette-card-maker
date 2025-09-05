@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Calibration - Silhouette Card Maker{% endblock %}
+
+{% block subtitle %}Generate calibration PDFs for precise cutting alignment{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h3>🎯 Calibration PDF Generation</h3>
+    <p>Generate calibration PDFs for all paper sizes to help you find the optimal offset values for your cutting machine.</p>
+    
+    <div class="card-reference">
+        <h4>📋 What are Calibration PDFs?</h4>
+        <p>Calibration PDFs contain registration marks and test patterns that help you:</p>
+        <ul>
+            <li><strong>Find optimal offset values:</strong> Test different X/Y offsets to achieve perfect alignment</li>
+            <li><strong>Verify cutting accuracy:</strong> Ensure your machine cuts exactly where intended</li>
+            <li><strong>Test different paper sizes:</strong> Each paper size may require different offset values</li>
+            <li><strong>Save time on real projects:</strong> Get your offsets right before cutting actual cards</li>
+        </ul>
+    </div>
+
+    <form method="POST" action="{{ url_for('calibration.calibration') }}">
+        <button type="submit">🎯 Generate Calibration PDFs</button>
+    </form>
+</div>
+
+<div class="card-reference">
+    <h4>📁 Generated Files</h4>
+    <p>Calibration PDFs will be generated in the <code>calibration/</code> directory:</p>
+    <ul>
+        <li><strong>a4_calibration.pdf</strong> - A4 paper calibration</li>
+        <li><strong>letter_calibration.pdf</strong> - Letter paper calibration</li>
+        <li><strong>a3_calibration.pdf</strong> - A3 paper calibration</li>
+        <li><strong>tabloid_calibration.pdf</strong> - Tabloid paper calibration</li>
+        <li><strong>archb_calibration.pdf</strong> - Arch B paper calibration</li>
+    </ul>
+</div>
+{% endblock %}
