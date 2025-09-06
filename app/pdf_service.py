@@ -20,6 +20,7 @@ from utilities import (
 )
 from app.utils import create_temp_directories, save_uploaded_files, cleanup_temp_directory
 from app.performance import monitor_memory_usage, optimize_image_processing
+from app.redis_cache import redis_cache
 
 
 class PDFCache:
@@ -165,7 +166,8 @@ class OptimizedPDFService:
     """Main service for optimized PDF generation"""
     
     def __init__(self):
-        self.cache = PDFCache()
+        # Use Redis cache if available, fallback to in-memory cache
+        self.cache = redis_cache if redis_cache.available else PDFCache()
         self.streaming_generator = StreamingPDFGenerator()
         self.parallel_processing = True
         self.max_concurrent_tasks = 4
@@ -189,7 +191,7 @@ class OptimizedPDFService:
                     'success': True,
                     'cached': True,
                     'file_path': cached_result['file_path'],
-                    'metadata': cached_result['metadata']
+                    'metadata': cached_result.get('metadata', {})
                 }
         
         # Check memory usage and optimize settings
@@ -355,7 +357,10 @@ class OptimizedPDFService:
     
     def cleanup_cache(self):
         """Clean up old cache entries"""
-        self.cache.cleanup_old_tasks()
+        if hasattr(self.cache, 'cleanup_expired'):
+            self.cache.cleanup_expired()
+        elif hasattr(self.cache, 'cleanup_old_tasks'):
+            self.cache.cleanup_old_tasks()
 
 
 # Global service instance

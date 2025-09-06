@@ -324,12 +324,18 @@ def clear_cache():
 @require_admin
 def get_cache_stats():
     """Get cache statistics (admin only)"""
-    cache_stats = {
-        'cache_size_mb': pdf_service.cache.current_size / (1024 * 1024),
-        'max_size_mb': pdf_service.cache.max_size_bytes / (1024 * 1024),
-        'entry_count': len(pdf_service.cache.cache),
-        'hit_rate': 'N/A'  # Would need to track hits/misses
-    }
+    if hasattr(pdf_service.cache, 'get_stats'):
+        # Redis cache
+        cache_stats = pdf_service.cache.get_stats()
+    else:
+        # In-memory cache
+        cache_stats = {
+            'available': True,
+            'cache_size_mb': pdf_service.cache.current_size / (1024 * 1024),
+            'max_size_mb': pdf_service.cache.max_size_bytes / (1024 * 1024),
+            'entry_count': len(pdf_service.cache.cache),
+            'hit_rate': 'N/A'  # Would need to track hits/misses
+        }
     
     return jsonify(cache_stats)
 
@@ -487,11 +493,14 @@ def get_metrics():
     current_memory = monitor_memory_usage()
     
     # Add cache metrics
-    cache_stats = {
-        'cache_size_mb': pdf_service.cache.current_size / (1024 * 1024),
-        'max_size_mb': pdf_service.cache.max_size_bytes / (1024 * 1024),
-        'entry_count': len(pdf_service.cache.cache)
-    }
+    if hasattr(pdf_service.cache, 'get_stats'):
+        cache_stats = pdf_service.cache.get_stats()
+    else:
+        cache_stats = {
+            'cache_size_mb': pdf_service.cache.current_size / (1024 * 1024),
+            'max_size_mb': pdf_service.cache.max_size_bytes / (1024 * 1024),
+            'entry_count': len(pdf_service.cache.cache)
+        }
     
     return jsonify({
         'performance_metrics': metrics,

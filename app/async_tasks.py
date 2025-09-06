@@ -13,6 +13,7 @@ from dataclasses import dataclass, asdict
 from flask import current_app
 import redis
 from celery import Celery
+from app.redis_cache import redis_task_manager
 
 
 class TaskStatus(Enum):
@@ -40,9 +41,13 @@ class TaskManager:
     """Manages background tasks for PDF generation"""
     
     def __init__(self, redis_url: str = None):
-        self.redis_url = redis_url or os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+        self.redis_url = redis_url or os.getenv('REDIS_URL', 'redis://:MyStrongPassword123!@108.175.14.173:6379/0')
         self.tasks: Dict[str, TaskInfo] = {}
         self.lock = threading.Lock()
+        
+        # Use Redis task manager if available
+        self.redis_task_manager = redis_task_manager
+        self.redis_available = redis_task_manager.available
         
         # Initialize Celery if Redis is available
         try:
@@ -57,26 +62,37 @@ class TaskManager:
                 task_time_limit=300,  # 5 minutes
                 task_soft_time_limit=240,  # 4 minutes
             )
-            self.redis_available = True
+            self.celery_available = True
         except Exception as e:
-            current_app.logger.warning(f"Redis not available, using in-memory task management: {e}")
+            current_app.logger.warning(f"Celery not available: {e}")
             self.celery = None
-            self.redis_available = False
+            self.celery_available = False
     
     def create_task(self, task_type: str, request_data: Dict[str, Any]) -> str:
         """Create a new background task"""
         task_id = str(uuid.uuid4())
         
-        with self.lock:
-            self.tasks[task_id] = TaskInfo(
-                task_id=task_id,
-                status=TaskStatus.PENDING,
-                created_at=datetime.utcnow(),
-                request_data=request_data
-            )
+        # Create task in Redis if available
+        if self.redis_available:
+            task_data = {
+                'task_type': task_type,
+                'request_data': request_data,
+                'status': TaskStatus.PENDING.value,
+                'progress': 0.0
+            }
+            self.redis_task_manager.create_task(task_id, task_data)
+        else:
+            # Fallback to in-memory storage
+            with self.lock:
+                self.tasks[task_id] = TaskInfo(
+                    task_id=task_id,
+                    status=TaskStatus.PENDING,
+                    created_at=datetime.utcnow(),
+                    request_data=request_data
+                )
         
         # Start the task
-        if self.redis_available and self.celery:
+        if self.celery_available and self.celery:
             # Use Celery for distributed task processing
             if task_type == 'pdf_generation':
                 self.celery.send_task('pdf_generation_task', args=[task_id, request_data])
@@ -92,56 +108,105 @@ class TaskManager:
     
     def get_task_status(self, task_id: str) -> Optional[TaskInfo]:
         """Get the status of a task"""
-        with self.lock:
-            return self.tasks.get(task_id)
+        if self.redis_available:
+            task_data = self.redis_task_manager.get_task(task_id)
+            if task_data:
+                return TaskInfo(
+                    task_id=task_data['task_id'],
+                    status=TaskStatus(task_data['status']),
+                    created_at=datetime.fromisoformat(task_data['created_at']),
+                    started_at=datetime.fromisoformat(task_data['started_at']) if task_data.get('started_at') else None,
+                    completed_at=datetime.fromisoformat(task_data['completed_at']) if task_data.get('completed_at') else None,
+                    progress=task_data.get('progress', 0.0),
+                    result=task_data.get('result'),
+                    error=task_data.get('error'),
+                    request_data=task_data.get('data')
+                )
+            return None
+        else:
+            with self.lock:
+                return self.tasks.get(task_id)
     
     def update_task_progress(self, task_id: str, progress: float, status: TaskStatus = None):
         """Update task progress"""
-        with self.lock:
-            if task_id in self.tasks:
-                self.tasks[task_id].progress = progress
-                if status:
-                    self.tasks[task_id].status = status
-                    if status == TaskStatus.RUNNING and not self.tasks[task_id].started_at:
-                        self.tasks[task_id].started_at = datetime.utcnow()
-                    elif status in [TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.CANCELLED]:
-                        self.tasks[task_id].completed_at = datetime.utcnow()
+        if self.redis_available:
+            updates = {'progress': progress}
+            if status:
+                updates['status'] = status.value
+            self.redis_task_manager.update_task(task_id, updates)
+        else:
+            with self.lock:
+                if task_id in self.tasks:
+                    self.tasks[task_id].progress = progress
+                    if status:
+                        self.tasks[task_id].status = status
+                        if status == TaskStatus.RUNNING and not self.tasks[task_id].started_at:
+                            self.tasks[task_id].started_at = datetime.utcnow()
+                        elif status in [TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.CANCELLED]:
+                            self.tasks[task_id].completed_at = datetime.utcnow()
     
     def complete_task(self, task_id: str, result: Dict[str, Any] = None, error: str = None):
         """Mark a task as completed"""
-        with self.lock:
-            if task_id in self.tasks:
-                self.tasks[task_id].completed_at = datetime.utcnow()
-                if error:
-                    self.tasks[task_id].status = TaskStatus.FAILURE
-                    self.tasks[task_id].error = error
-                else:
-                    self.tasks[task_id].status = TaskStatus.SUCCESS
-                    self.tasks[task_id].result = result
-                self.tasks[task_id].progress = 100.0
+        if self.redis_available:
+            updates = {
+                'progress': 100.0,
+                'completed_at': datetime.utcnow().isoformat()
+            }
+            if error:
+                updates['status'] = TaskStatus.FAILURE.value
+                updates['error'] = error
+            else:
+                updates['status'] = TaskStatus.SUCCESS.value
+                updates['result'] = result
+            self.redis_task_manager.update_task(task_id, updates)
+        else:
+            with self.lock:
+                if task_id in self.tasks:
+                    self.tasks[task_id].completed_at = datetime.utcnow()
+                    if error:
+                        self.tasks[task_id].status = TaskStatus.FAILURE
+                        self.tasks[task_id].error = error
+                    else:
+                        self.tasks[task_id].status = TaskStatus.SUCCESS
+                        self.tasks[task_id].result = result
+                    self.tasks[task_id].progress = 100.0
     
     def cancel_task(self, task_id: str) -> bool:
         """Cancel a running task"""
-        with self.lock:
-            if task_id in self.tasks and self.tasks[task_id].status in [TaskStatus.PENDING, TaskStatus.RUNNING]:
-                self.tasks[task_id].status = TaskStatus.CANCELLED
-                self.tasks[task_id].completed_at = datetime.utcnow()
-                return True
-        return False
+        if self.redis_available:
+            task_data = self.redis_task_manager.get_task(task_id)
+            if task_data and task_data['status'] in ['pending', 'running']:
+                updates = {
+                    'status': TaskStatus.CANCELLED.value,
+                    'completed_at': datetime.utcnow().isoformat()
+                }
+                return self.redis_task_manager.update_task(task_id, updates)
+            return False
+        else:
+            with self.lock:
+                if task_id in self.tasks and self.tasks[task_id].status in [TaskStatus.PENDING, TaskStatus.RUNNING]:
+                    self.tasks[task_id].status = TaskStatus.CANCELLED
+                    self.tasks[task_id].completed_at = datetime.utcnow()
+                    return True
+            return False
     
     def cleanup_old_tasks(self, max_age_hours: int = 24):
         """Clean up old completed tasks"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=max_age_hours)
-        
-        with self.lock:
-            tasks_to_remove = []
-            for task_id, task in self.tasks.items():
-                if (task.status in [TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.CANCELLED] 
-                    and task.completed_at and task.completed_at < cutoff_time):
-                    tasks_to_remove.append(task_id)
+        if self.redis_available:
+            # Redis handles TTL automatically, but we can add additional cleanup logic
+            self.redis_task_manager.cleanup_old_tasks(max_age_hours)
+        else:
+            cutoff_time = datetime.utcnow() - timedelta(hours=max_age_hours)
             
-            for task_id in tasks_to_remove:
-                del self.tasks[task_id]
+            with self.lock:
+                tasks_to_remove = []
+                for task_id, task in self.tasks.items():
+                    if (task.status in [TaskStatus.SUCCESS, TaskStatus.FAILURE, TaskStatus.CANCELLED] 
+                        and task.completed_at and task.completed_at < cutoff_time):
+                        tasks_to_remove.append(task_id)
+                
+                for task_id in tasks_to_remove:
+                    del self.tasks[task_id]
     
     def _run_task(self, task_id: str, task_type: str):
         """Run a task in a separate thread"""

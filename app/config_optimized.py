@@ -31,7 +31,11 @@ class OptimizedConfig:
     RATE_LIMIT_PDF_GENERATION_PER_HOUR = int(os.environ.get('RATE_LIMIT_PDF_GENERATION_PER_HOUR', 50))
     
     # Redis settings for async tasks
-    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://:MyStrongPassword123!@108.175.14.173:6379/0')
+    REDIS_HOST = os.environ.get('REDIS_HOST', '108.175.14.173')
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', 'MyStrongPassword123!')
+    REDIS_DB = int(os.environ.get('REDIS_DB', 0))
     CELERY_BROKER_URL = REDIS_URL
     CELERY_RESULT_BACKEND = REDIS_URL
     
