@@ -61,7 +61,7 @@ class RedisCache:
     def __init__(self, redis_url: str = None, key_prefix: str = "pdf_cache", 
                  max_connections: int = 20, socket_timeout: int = 5, 
                  socket_connect_timeout: int = 5, retry_on_timeout: bool = True,
-                 health_check_interval: int = 30, compression_threshold: int = 1024):
+                 health_check_interval: int = 30, compression_threshold: int = 512):
         self.redis_url = redis_url or os.getenv('REDIS_URL', 'redis://:MyStrongPassword123!@108.175.14.173:6379/0')
         self.key_prefix = key_prefix
         self.lock = threading.Lock()
@@ -121,6 +121,10 @@ class RedisCache:
         try:
             self._test_connection()
             self.last_health_check = current_time
+            # Reset circuit breaker on successful health check
+            if self.circuit_breaker.state == 'OPEN':
+                self.circuit_breaker.state = 'HALF_OPEN'
+                self.circuit_breaker.failure_count = 0
             return True
         except Exception:
             self.available = False
@@ -157,7 +161,8 @@ class RedisCache:
             yield self.redis_client
         except (ConnectionError, TimeoutError) as e:
             self._log_error(f"Redis {operation_name} failed: {e}")
-            raise RedisError(f"Redis {operation_name} failed: {e}")
+            # Don't raise RedisError for circuit breaker to handle
+            raise e
         except Exception as e:
             self._log_error(f"Unexpected error during Redis {operation_name}: {e}")
             raise
@@ -445,8 +450,8 @@ class RedisCache:
                     'redis_info': redis_info,
                     'connection_pool_stats': {
                         'max_connections': self.pool_config['max_connections'],
-                        'created_connections': self.connection_pool.created_connections,
-                        'available_connections': self.connection_pool.available_connections
+                        'created_connections': getattr(self.connection_pool, 'created_connections', 0),
+                        'available_connections': getattr(self.connection_pool, 'available_connections', 0)
                     }
                 }
         
@@ -510,8 +515,8 @@ class RedisCache:
             'circuit_breaker_state': self.circuit_breaker.state,
             'circuit_breaker_failures': self.circuit_breaker.failure_count,
             'last_health_check': self.last_health_check,
-            'connection_pool_created': self.connection_pool.created_connections if self.connection_pool else 0,
-            'connection_pool_available': self.connection_pool.available_connections if self.connection_pool else 0
+            'connection_pool_created': getattr(self.connection_pool, 'created_connections', 0) if self.connection_pool else 0,
+            'connection_pool_available': getattr(self.connection_pool, 'available_connections', 0) if self.connection_pool else 0
         }
     
     def reset_circuit_breaker(self):
@@ -521,6 +526,22 @@ class RedisCache:
             self.circuit_breaker.failure_count = 0
             self.circuit_breaker.last_failure_time = None
         self._log_info("Circuit breaker reset manually")
+    
+    def _force_health_check(self):
+        """Force a health check and reset circuit breaker if Redis is available"""
+        try:
+            self._test_connection()
+            self.available = True
+            self.last_health_check = time.time()
+            # Reset circuit breaker on successful connection
+            with self.circuit_breaker.lock:
+                if self.circuit_breaker.state == 'OPEN':
+                    self.circuit_breaker.state = 'HALF_OPEN'
+                    self.circuit_breaker.failure_count = 0
+            return True
+        except Exception as e:
+            self.available = False
+            return False
 
 
 class RedisTaskManager:
@@ -814,8 +835,8 @@ class RedisTaskManager:
             'available': self.available,
             'circuit_breaker_state': self.circuit_breaker.state,
             'circuit_breaker_failures': self.circuit_breaker.failure_count,
-            'connection_pool_created': self.connection_pool.created_connections if self.connection_pool else 0,
-            'connection_pool_available': self.connection_pool.available_connections if self.connection_pool else 0
+            'connection_pool_created': getattr(self.connection_pool, 'created_connections', 0) if self.connection_pool else 0,
+            'connection_pool_available': getattr(self.connection_pool, 'available_connections', 0) if self.connection_pool else 0
         }
 
 
