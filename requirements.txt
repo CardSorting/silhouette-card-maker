@@ -20,3 +20,10 @@ bcrypt==4.1.2
 marshmallow==3.20.1
 flask-marshmallow==0.15.0
 gunicorn==21.2.0
+# Optimized API dependencies
+celery==5.3.4
+redis==5.0.1
+flower==2.0.1
+prometheus-client==0.19.0
+# PostgreSQL driver
+psycopg2-binary==2.9.9

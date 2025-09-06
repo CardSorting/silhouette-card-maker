@@ -4,6 +4,7 @@ import logging
 from flask import Flask
 from flask_cors import CORS
 from app.config import config
+from app.config_postgresql import postgresql_config
 from app.models import init_db
 from app.auth import init_auth
 
@@ -14,7 +15,15 @@ def create_app(config_name=None):
         config_name = os.environ.get('FLASK_ENV', 'default')
     
     app = Flask(__name__)
-    app.config.from_object(config[config_name])
+    
+    # Use PostgreSQL config if individual DB parameters are set
+    if os.environ.get('DB_HOST'):
+        app.config.from_object(postgresql_config[config_name])
+        # Override the database URI with our custom engine
+        from app.database import get_database_uri
+        app.config['SQLALCHEMY_DATABASE_URI'] = get_database_uri()
+    else:
+        app.config.from_object(config[config_name])
     
     # Configure logging
     logging.basicConfig(
