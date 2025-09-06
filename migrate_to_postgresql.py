@@ -126,7 +126,8 @@ def create_postgres_table(cursor, table_name, schema):
     if primary_keys:
         columns.append(f'PRIMARY KEY ({", ".join(primary_keys)})')
     
-    create_sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" (\n  {",\n  ".join(columns)}\n)'
+    columns_str = ",\n  ".join(columns)
+    create_sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" (\n  {columns_str}\n)'
     
     try:
         cursor.execute(create_sql)
