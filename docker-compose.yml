@@ -13,9 +13,13 @@ services:
       - CORS_ORIGINS=https://your-frontend-domain.com
       - GUNICORN_WORKERS=4
       - GUNICORN_TIMEOUT=60
+      - START_CELERY_WORKER=false
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - ./instance:/app/instance
       - ./uploads:/app/uploads
+    depends_on:
+      - redis
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
@@ -23,6 +27,43 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  celery-worker:
+    build: .
+    command: python celery_app.py
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///app.db
+      - JWT_SECRET_KEY=your-production-secret-key-change-this
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_CONCURRENCY=2
+      - CELERY_QUEUES=pdf_generation,pdf_offset,default
+    volumes:
+      - ./instance:/app/instance
+      - ./uploads:/app/uploads
+    depends_on:
+      - redis
+      - silhouette-card-maker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://silhouette-card-maker:5000/api/celery/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # Optional: Add Nginx reverse proxy
   nginx:
@@ -36,3 +77,6 @@ services:
     depends_on:
       - silhouette-card-maker
     restart: unless-stopped
+
+volumes:
+  redis_data:

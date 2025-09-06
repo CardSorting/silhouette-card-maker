@@ -9,6 +9,52 @@ from app.models import init_db
 from app.auth import init_auth
 
 
+def _init_celery_worker(app):
+    """Initialize Celery worker with comprehensive management"""
+    start_celery_worker = os.environ.get('START_CELERY_WORKER', 'false').lower() == 'true'
+    is_production = os.environ.get('FLASK_ENV', 'development') == 'production'
+    
+    if start_celery_worker:
+        try:
+            from app.celery_manager import worker_manager
+            
+            if is_production:
+                app.logger.info("🚀 Production mode: Starting Celery worker with comprehensive management...")
+            else:
+                app.logger.info("🚀 Development mode: Starting Celery worker automatically...")
+            
+            # Configure worker based on environment
+            concurrency = int(os.environ.get('CELERY_CONCURRENCY', 2))
+            queues = os.environ.get('CELERY_QUEUES', 'pdf_generation,pdf_offset,default').split(',')
+            
+            success = worker_manager.start_worker(
+                concurrency=concurrency,
+                queues=queues,
+                hostname=f"worker@{os.uname().nodename if hasattr(os, 'uname') else 'localhost'}",
+                loglevel='info' if not is_production else 'warning'
+            )
+            
+            if success:
+                app.logger.info("✅ Celery worker started successfully with comprehensive management")
+                app.logger.info(f"   Concurrency: {concurrency}")
+                app.logger.info(f"   Queues: {', '.join(queues)}")
+                app.logger.info("   Health monitoring: Enabled")
+                app.logger.info("   Auto-restart: Enabled")
+            else:
+                app.logger.warning("⚠️ Failed to start Celery worker")
+                app.logger.warning("   Celery tasks will fall back to threading mode")
+                
+        except Exception as e:
+            app.logger.warning(f"⚠️ Failed to initialize Celery worker: {e}")
+            app.logger.warning("   Celery tasks will fall back to threading mode")
+            import traceback
+            app.logger.debug(f"Full error: {traceback.format_exc()}")
+    else:
+        app.logger.info("ℹ️ Celery worker auto-start disabled")
+        app.logger.info("   Set START_CELERY_WORKER=true to enable automatic worker startup")
+        app.logger.info("   Or start manually with: python celery_app.py")
+
+
 def create_app(config_name=None):
     """Application factory pattern"""
     if config_name is None:
@@ -40,6 +86,9 @@ def create_app(config_name=None):
     # Initialize authentication system
     init_auth(app)
     
+    # Initialize Celery worker if enabled
+    _init_celery_worker(app)
+    
     # Add custom template filters
     @app.template_filter('tojson')
     def tojson_filter(obj):
@@ -60,6 +109,9 @@ def create_app(config_name=None):
     
     from app.calibration import bp as calibration_bp
     app.register_blueprint(calibration_bp, url_prefix='/calibration')
+    
+    from app.api.celery_routes import celery_bp
+    app.register_blueprint(celery_bp, url_prefix='/api')
     
     # Add error handlers
     @app.errorhandler(404)
@@ -82,5 +134,22 @@ def create_app(config_name=None):
     def internal_error(error):
         app.logger.error(f'Internal server error: {error}')
         return {'error': 'Internal server error', 'code': 'INTERNAL_ERROR'}, 500
+    
+    # Add graceful shutdown handling
+    @app.teardown_appcontext
+    def cleanup_celery_worker(error):
+        """Cleanup Celery worker on app shutdown"""
+        if error:
+            app.logger.error(f"App context teardown with error: {error}")
+        
+        # Only cleanup if this is the main process
+        if os.environ.get('START_CELERY_WORKER', 'false').lower() == 'true':
+            try:
+                from app.celery_manager import worker_manager
+                if worker_manager.is_worker_healthy():
+                    app.logger.info("🧹 Cleaning up Celery worker on app shutdown...")
+                    worker_manager.cleanup()
+            except Exception as e:
+                app.logger.warning(f"⚠️ Error during Celery worker cleanup: {e}")
     
     return app
